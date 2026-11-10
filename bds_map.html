@@ -1,49 +1,309 @@
 <!doctype html>
 <html lang="zh-Hant">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#0b1220">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0b1220">
 <title>北斗 NMEA 即時定位 | Holo-Map</title>
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" crossorigin="anonymous">
 <style>
-:root{color-scheme:dark;--panel:rgba(15,23,42,.96);--field:#111c31;--line:#334155;--text:#e2e8f0;--muted:#94a3b8}*{box-sizing:border-box}html,body{height:100%;margin:0;font:14px/1.45 system-ui,"Noto Sans TC",sans-serif;background:#0b1220;color:var(--text)}#map{position:absolute;inset:0}.panel{position:absolute;z-index:5;left:12px;top:12px;width:min(360px,calc(100vw - 24px));max-height:calc(100vh - 24px);overflow:auto;padding:14px;background:var(--panel);border:1px solid #475569;border-radius:12px;box-shadow:0 10px 32px #0008;backdrop-filter:blur(5px)}h1{font-size:17px;margin:0 0 2px}.sub,.hint{color:var(--muted);font-size:12px;margin:0 0 10px}.row{display:flex;gap:7px;margin:7px 0}.row>*{min-width:0;flex:1}button,input[type=file]{font:inherit;color:var(--text);background:#1e293b;border:1px solid #475569;border-radius:7px;padding:8px}button{cursor:pointer;min-height:38px}button:hover:not(:disabled){background:#334155}button:disabled{opacity:.5}.primary{background:#0369a1;border-color:#0284c7}.status{padding:8px 10px;margin:8px 0;background:var(--field);border:1px solid var(--line);border-radius:7px;font-size:12px}.status.ok{color:#4ade80}.status.err{color:#fca5a5}.grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.field{background:var(--field);padding:7px;border-radius:7px;border:1px solid #24324a}.field span{display:block;color:var(--muted);font-size:11px}.field b{font-size:12px;overflow-wrap:anywhere}.section{border-top:1px dashed #475569;margin-top:10px;padding-top:8px}.section-title{font-size:12px;font-weight:600;margin:0 0 6px}.history{font-size:12px;margin:0;padding-left:20px}.history li{margin:5px 0;overflow-wrap:anywhere}.history button{min-height:28px;padding:3px 7px;font-size:11px}.maplibregl-ctrl-group button{min-height:29px;padding:0}@media(max-width:560px){.panel{left:8px;top:8px;width:calc(100vw - 16px);max-height:53vh;padding:11px}h1{font-size:16px}}
+:root{color-scheme:dark;--panel:rgba(15,23,42,.96);--field:#111c31;--line:#334155;--text:#e2e8f0;--muted:#94a3b8}*{box-sizing:border-box}html,body{height:100%;margin:0;font:14px/1.45 system-ui,"Noto Sans TC",sans-serif;background:#0b1220;color:var(--text)}#map{position:absolute;inset:0}.panel{position:absolute;z-index:5;left:12px;top:12px;width:min(370px,calc(100vw - 24px));max-height:calc(100vh - 24px);overflow:auto;padding:14px;background:var(--panel);border:1px solid #475569;border-radius:12px;box-shadow:0 10px 32px #0008;backdrop-filter:blur(5px)}h1{font-size:17px;margin:0 0 2px}.sub,.hint{color:var(--muted);font-size:12px;margin:0 0 10px}.row{display:flex;gap:7px;margin:7px 0}.row>*{min-width:0;flex:1}button,input[type=file]{font:inherit;color:var(--text);background:#1e293b;border:1px solid #475569;border-radius:7px;padding:8px}button{cursor:pointer;min-height:40px}button:hover:not(:disabled){background:#334155}button:disabled{opacity:.5;cursor:default}.primary{background:#0369a1;border-color:#0284c7}.recording{background:#991b1b;border-color:#ef4444}.status{padding:8px 10px;margin:8px 0;background:var(--field);border:1px solid var(--line);border-radius:7px;font-size:12px}.status.ok{color:#4ade80}.status.err{color:#fca5a5}.grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.field{background:var(--field);padding:7px;border-radius:7px;border:1px solid #24324a}.field span{display:block;color:var(--muted);font-size:11px}.field b{font-size:12px;overflow-wrap:anywhere}.section{border-top:1px dashed #475569;margin-top:10px;padding-top:8px}.section-title{font-size:12px;font-weight:600;margin:0 0 6px}.history{font-size:12px;margin:0;padding-left:20px}.history li{margin:6px 0;overflow-wrap:anywhere}.history button{min-height:28px;padding:3px 7px;font-size:11px}.asset-links a{color:#7dd3fc;overflow-wrap:anywhere}.maplibregl-ctrl-group button{min-height:29px;padding:0}@media(max-width:560px){.panel{left:8px;top:8px;width:calc(100vw - 16px);max-height:55vh;padding:11px}h1{font-size:16px}}
 </style>
 </head>
 <body>
 <div id="map" aria-label="車輛即時位置及行駛路徑地圖"></div>
 <main class="panel">
-<h1>北斗車輛即時地圖</h1><p class="sub">UART NMEA-0183 · 即時位置 · 行駛軌跡 · 歷史路徑</p>
-<div id="status" class="status" role="status" aria-live="polite">地圖載入中…</div>
-<div class="row"><button id="btnConnect" class="primary" type="button">連接樹莓派 UART</button><button id="btnCenter" type="button">車輛置中</button></div>
-<div class="grid"><div class="field"><span>目前座標</span><b id="coord">—</b></div><div class="field"><span>定位狀態</span><b id="fix">等待 NMEA</b></div><div class="field"><span>速度</span><b id="speed">—</b></div><div class="field"><span>航向</span><b id="course">—</b></div></div>
-<div class="section"><p class="section-title">目前行程</p><div class="row"><button id="btnRecord" type="button">開始新行程</button><button id="btnSave" type="button" disabled>儲存行程</button></div><div class="row"><button id="btnClearCurrent" type="button">清除目前路徑</button><button id="btnFit" type="button">全覽目前路徑</button></div><p id="trackInfo" class="hint">目前路徑尚無座標點。</p></div>
-<div class="section"><p class="section-title">匯入歷史路徑</p><input id="routeFile" type="file" accept=".gpx,.geojson,.json,application/json,application/gpx+xml" aria-label="選擇 GPX 或 GeoJSON 路徑檔"><p class="hint">支援 GPX、GeoJSON／JSON。點選歷史路徑可查看記錄名稱。</p><ul id="historyList" class="history"></ul></div>
-<p class="hint">若 10 秒內沒有收到有效定位，地圖會隱藏即時車輛標記；歷史路徑會保留。UART 由樹莓派 Python 橋接程式讀取，網頁連接同一主機 WebSocket 8765 埠。</p>
+  <h1>北斗車輛即時地圖</h1>
+  <p class="sub">UART NMEA-0183 · 即時位置 · 行駛軌跡 · 歷史路徑</p>
+  <div id="status" class="status" role="status" aria-live="polite">地圖載入中…</div>
+  <div class="row"><button id="btnRecord" class="primary" type="button" aria-pressed="false">開始一段路</button><button id="btnCenter" type="button" disabled>車輛置中</button></div>
+  <div class="grid">
+    <div class="field"><span>目前座標</span><b id="coord">—</b></div>
+    <div class="field"><span>定位狀態</span><b id="fix">車輛未啟動</b></div>
+    <div class="field"><span>速度</span><b id="speed">—</b></div>
+    <div class="field"><span>航向</span><b id="course">—</b></div>
+  </div>
+  <div class="section">
+    <p class="section-title">目前行程</p>
+    <p id="trackInfo" class="hint">尚未開始記錄。</p>
+    <div class="row"><button id="btnFit" type="button">全覽目前路徑</button><button id="btnExport" type="button" disabled>匯出 GPX</button></div>
+  </div>
+  <div class="section">
+    <p class="section-title">匯入歷史路徑</p>
+    <input id="routeFile" type="file" accept=".gpx,.geojson,.json,application/json,application/gpx+xml" aria-label="選擇 GPX 或 GeoJSON 路徑檔">
+    <p class="hint">支援 GPX、GeoJSON／JSON。點選歷史路徑可查看行程與關聯檔案資訊。</p>
+    <ul id="historyList" class="history"></ul>
+  </div>
+  <p class="hint">按「開始一段路」才連接 UART、顯示即時位置並記錄；再按一次結束並儲存。位置 10 秒未更新會隱藏標記。歷史紀錄保存在此瀏覽器；檔案和 PLY 3D 檢視可後續掛接。</p>
 </main>
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js" crossorigin="anonymous"></script>
 <script>
 (() => {
-'use strict';
-const $=id=>document.getElementById(id), statusEl=$('status'), empty={type:'FeatureCollection',features:[]}, storageKey='holo-map-tracks-v1', LIVE_TIMEOUT_MS=10000;
-let map=null,socket=null,reconnectTimer=0,currentPoints=[],currentName='',marker=null,histories=loadHistory(),latest=null,lastFixAt=0;
-function setStatus(message,kind=''){statusEl.className='status'+(kind?' '+kind:'');statusEl.textContent=message}
-function loadHistory(){try{const data=JSON.parse(localStorage.getItem(storageKey)||'[]');return Array.isArray(data)?data:[]}catch(_){return[]}}
-function saveHistory(){try{localStorage.setItem(storageKey,JSON.stringify(histories))}catch(_){setStatus('瀏覽器儲存空間不足；歷史路徑未能保存。','err')}}
-function routeCollection(){return{type:'FeatureCollection',features:histories.map((item,index)=>({type:'Feature',properties:{id:index,name:item.name,date:item.date},geometry:{type:'LineString',coordinates:item.coordinates}})).filter(f=>f.geometry.coordinates.length>1)}}
-function updateTrack(){const source=map&&map.getSource('current-track');if(source)source.setData(currentPoints.length>1?{type:'Feature',properties:{name:currentName||'目前行程'},geometry:{type:'LineString',coordinates:currentPoints}}:empty);$('trackInfo').textContent=currentPoints.length?`${currentName||'未命名行程'}：${currentPoints.length} 個定位點`:'目前路徑尚無座標點。';$('btnSave').disabled=currentPoints.length<2}
-function renderHistory(){if(!map||!map.getSource('history-tracks'))return;map.getSource('history-tracks').setData(routeCollection());const list=$('historyList');list.replaceChildren();histories.forEach((item,index)=>{const li=document.createElement('li'),button=document.createElement('button');button.type='button';button.textContent='顯示';button.addEventListener('click',()=>fitCoordinates(item.coordinates));li.append(`${item.name} (${item.coordinates.length} 點) `,button);list.appendChild(li)})}
-function fitCoordinates(points){if(!map||!points?.length)return;if(points.length===1){map.easeTo({center:points[0],zoom:16});return}const bounds=points.reduce((b,p)=>b.extend(p),new maplibregl.LngLatBounds(points[0],points[0]));map.fitBounds(bounds,{padding:{top:60,right:50,bottom:60,left:390},maxZoom:16,duration:500})}
-function hideLivePosition(){if(marker){marker.remove();marker=null}latest=null;$('coord').textContent='—';$('fix').textContent='無即時定位';$('speed').textContent='—';$('course').textContent='—'}
-function addPosition(lon,lat,data={}){if(!Number.isFinite(lat)||!Number.isFinite(lon)||Math.abs(lat)>90||Math.abs(lon)>180)return;lastFixAt=Date.now();latest=[lon,lat];$('coord').textContent=`${lat.toFixed(6)}, ${lon.toFixed(6)}`;$('fix').textContent=data.fix||'定位有效';$('speed').textContent=data.speed==null?'—':`${data.speed.toFixed(1)} km/h`;$('course').textContent=data.course==null?'—':`${data.course.toFixed(1)}°`;if(map){if(!marker){const node=document.createElement('div');node.style.cssText='width:18px;height:18px;border-radius:50%;background:#0ea5e9;border:3px solid white;box-shadow:0 0 0 5px #0ea5e944,0 2px 8px #0009';marker=new maplibregl.Marker({element:node,anchor:'center'}).setLngLat(latest).addTo(map)}else marker.setLngLat(latest)}const prev=currentPoints[currentPoints.length-1];if(!prev||Math.hypot((lon-prev[0])*111320*Math.cos(lat*Math.PI/180),(lat-prev[1])*110540)>1.5){currentPoints.push(latest);if(currentPoints.length>20000)currentPoints.shift();updateTrack()}}
-function coordinate(value,hemisphere){if(!value||!hemisphere)return null;const raw=Number(value);if(!Number.isFinite(raw))return null;const degrees=Math.floor(raw/100),result=degrees+(raw-degrees*100)/60;return hemisphere==='S'||hemisphere==='W'?-result:result}
-function checksumValid(sentence){const star=sentence.lastIndexOf('*');if(star<0)return true;let checksum=0;for(let i=1;i<star;i++)checksum^=sentence.charCodeAt(i);return checksum===parseInt(sentence.slice(star+1,star+3),16)}
-function handleNmea(raw){const line=raw.trim();if(!line.startsWith('$')||!checksumValid(line))return;const f=line.split('*')[0].split(','),type=f[0].slice(-3).toUpperCase();let lat,lon,speed=null,course=null,valid=false;if(type==='GGA'){valid=Number(f[6])>0;lat=coordinate(f[2],f[3]);lon=coordinate(f[4],f[5])}else if(type==='RMC'){valid=f[2]==='A';lat=coordinate(f[3],f[4]);lon=coordinate(f[5],f[6]);if(f[7]){const n=Number(f[7]);if(Number.isFinite(n))speed=n*1.852}if(f[8]){const n=Number(f[8]);if(Number.isFinite(n))course=n}}else return;if(valid&&Number.isFinite(lat)&&Number.isFinite(lon)){addPosition(lon,lat,{speed,course,fix:type+' 定位有效'});setStatus('已接收北斗定位資料。','ok')}else if(type==='RMC'&&f[2]==='V')$('fix').textContent='尚未定位'}
-function connectSocket(){if(!('WebSocket'in window)){setStatus('此瀏覽器不支援 WebSocket。','err');return}if(socket&&(socket.readyState===WebSocket.OPEN||socket.readyState===WebSocket.CONNECTING))return;const host=location.hostname||'localhost',protocol=location.protocol==='https:'?'wss:':'ws:';setStatus(`正在連接 ${host}:8765…`);socket=new WebSocket(`${protocol}//${host}:8765`);socket.onopen=()=>{setStatus('已連接樹莓派 UART，等待 NMEA 定位資料…','ok');$('btnConnect').textContent='已連線'};socket.onmessage=e=>{if(typeof e.data==='string')e.data.split(/\r?\n/).forEach(handleNmea)};socket.onerror=()=>setStatus('UART WebSocket 連線失敗。請確認 Python 橋接程式已啟動。','err');socket.onclose=()=>{$('btnConnect').textContent='重新連接 UART';setStatus('UART 連線中斷；即時位置將在逾時後隱藏。');clearTimeout(reconnectTimer);reconnectTimer=setTimeout(connectSocket,5000)}}
-function parseGpx(text){const xml=new DOMParser().parseFromString(text,'application/xml');if(xml.querySelector('parsererror'))throw Error('GPX XML 格式錯誤');let lines=[...xml.querySelectorAll('trkseg,rte')].map(segment=>[...segment.querySelectorAll('trkpt,rtept')].map(p=>[Number(p.getAttribute('lon')),Number(p.getAttribute('lat'))]).filter(p=>p.every(Number.isFinite))).filter(p=>p.length>1);if(!lines.length){const points=[...xml.querySelectorAll('trkpt,rtept')].map(p=>[Number(p.getAttribute('lon')),Number(p.getAttribute('lat'))]).filter(p=>p.every(Number.isFinite));if(points.length>1)lines=[points]}return lines}
-function validLine(points){return Array.isArray(points)&&points.length>1&&points.every(p=>Array.isArray(p)&&Number.isFinite(Number(p[0]))&&Number.isFinite(Number(p[1]))&&Math.abs(Number(p[0]))<=180&&Math.abs(Number(p[1]))<=90)}
-if(window.maplibregl){map=new maplibregl.Map({container:'map',style:'https://tiles.openfreemap.org/styles/liberty',center:[120.97,23.9],zoom:8,attributionControl:true,dragRotate:false,pitchWithRotate:false,touchPitch:false});map.addControl(new maplibregl.NavigationControl({showCompass:false}),'bottom-right');map.on('load',()=>{map.addSource('history-tracks',{type:'geojson',data:routeCollection()});map.addLayer({id:'history-track-lines',type:'line',source:'history-tracks',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#a78bfa','line-width':4,'line-opacity':.75}});map.addSource('current-track',{type:'geojson',data:empty});map.addLayer({id:'current-track-line',type:'line',source:'current-track',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#f97316','line-width':5,'line-opacity':.95}});map.on('click','history-track-lines',e=>{const f=e.features?.[0],item=f&&histories[Number(f.properties.id)];if(!item)return;const popup=document.createElement('div'),title=document.createElement('strong'),detail=document.createElement('div');title.textContent=item.name;detail.textContent=`${item.date} · ${item.coordinates.length} 個定位點`;popup.append(title,detail);new maplibregl.Popup().setLngLat(e.lngLat).setDOMContent(popup).addTo(map)});map.on('mouseenter','history-track-lines',()=>map.getCanvas().style.cursor='pointer');map.on('mouseleave','history-track-lines',()=>map.getCanvas().style.cursor='');renderHistory();updateTrack();setStatus('地圖就緒。按「連接樹莓派 UART」開始接收北斗 NMEA。')});map.on('error',()=>setStatus('地圖底圖載入失敗，請確認網路連線。','err'))}else setStatus('無法載入地圖程式，請確認網路連線後重新整理。','err');
-$('btnConnect').addEventListener('click',connectSocket);$('btnCenter').addEventListener('click',()=>{if(latest&&map)map.easeTo({center:latest,zoom:Math.max(map.getZoom(),15)})});$('btnRecord').addEventListener('click',()=>{currentPoints=[];currentName=`行程 ${new Date().toLocaleString('zh-TW')}`;updateTrack();setStatus('新行程已開始；有效定位會記錄為橘色路徑。')});$('btnSave').addEventListener('click',()=>{if(currentPoints.length<2)return;histories.unshift({name:currentName||`行程 ${new Date().toLocaleString('zh-TW')}`,date:new Date().toISOString(),coordinates:currentPoints.map(p=>[...p])});histories=histories.slice(0,100);saveHistory();renderHistory();setStatus('目前行程已儲存至瀏覽器歷史路徑。','ok')});$('btnClearCurrent').addEventListener('click',()=>{currentPoints=[];currentName='';updateTrack()});$('btnFit').addEventListener('click',()=>fitCoordinates(currentPoints));$('routeFile').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;try{const text=await file.text(),ext=file.name.split('.').pop().toLowerCase();let lines=[];if(ext==='gpx')lines=parseGpx(text);else{const data=JSON.parse(text),features=data.type==='FeatureCollection'?data.features:data.type==='Feature'?[data]:[];for(const feature of features){const g=feature?.geometry;if(g?.type==='LineString'&&validLine(g.coordinates))lines.push(g.coordinates.map(p=>[Number(p[0]),Number(p[1])]));if(g?.type==='MultiLineString')for(const part of g.coordinates)if(validLine(part))lines.push(part.map(p=>[Number(p[0]),Number(p[1])]))}}if(!lines.length)throw Error('檔案中找不到有效的路徑座標。');for(let i=0;i<lines.length;i++)histories.unshift({name:lines.length>1?`${file.name} (${i+1})`:file.name,date:new Date().toISOString(),coordinates:lines[i]});histories=histories.slice(0,100);saveHistory();renderHistory();fitCoordinates(lines[0]);setStatus(`已匯入 ${file.name}，共 ${lines.length} 條歷史路徑。`,'ok')}catch(error){setStatus(`匯入失敗：${error.message||error}`,'err')}e.target.value=''});
-setInterval(()=>{if(lastFixAt&&Date.now()-lastFixAt>LIVE_TIMEOUT_MS){hideLivePosition();lastFixAt=0;setStatus('超過 10 秒未收到有效定位，已隱藏即時車輛位置；歷史路徑仍保留。')}} ,1000);
-renderHistory();
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const STORAGE_KEY = 'holo-map-tracks-v1';
+  const LIVE_TIMEOUT_MS = 10000;
+  const EMPTY_FC = { type: 'FeatureCollection', features: [] };
+  let map = null;
+  let socket = null;
+  let reconnectTimer = 0;
+  let isRecording = false;
+  let currentPoints = [];
+  let currentName = '';
+  let currentStartedAt = null;
+  let histories = loadHistory();
+  let marker = null;
+  let lastFixAt = 0;
+  let latestPosition = null;
+
+  function setStatus(message, kind = '') {
+    const el = $('status');
+    el.className = 'status' + (kind ? ' ' + kind : '');
+    el.textContent = message;
+  }
+  function loadHistory() {
+    try {
+      const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      return Array.isArray(data) ? data.filter((item) => item && Array.isArray(item.coordinates)) : [];
+    } catch (_) { return []; }
+  }
+  function saveHistory() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(histories)); return true; }
+    catch (_) { setStatus('瀏覽器儲存空間不足，無法保存路徑。請匯出 GPX 備份。', 'err'); return false; }
+  }
+  function historyFeatureCollection() {
+    return {
+      type: 'FeatureCollection',
+      features: histories.filter((item) => item.coordinates.length > 1).map((item, index) => ({
+        type: 'Feature', properties: { id: index, name: item.name, date: item.date },
+        geometry: { type: 'LineString', coordinates: item.coordinates }
+      }))
+    };
+  }
+  function updateCurrentTrack() {
+    const source = map && map.getSource('current-track');
+    if (source) source.setData(currentPoints.length > 1 ? {
+      type: 'Feature', properties: { name: currentName },
+      geometry: { type: 'LineString', coordinates: currentPoints }
+    } : EMPTY_FC);
+    $('trackInfo').textContent = isRecording
+      ? `${currentName} · ${currentPoints.length} 個定位點（記錄中）`
+      : currentPoints.length > 1 ? `${currentName} · ${currentPoints.length} 個定位點` : '尚未開始記錄。';
+    $('btnExport').disabled = currentPoints.length < 2;
+  }
+  function renderHistory() {
+    if (!map || !map.getSource('history-tracks')) return;
+    map.getSource('history-tracks').setData(historyFeatureCollection());
+    const list = $('historyList');
+    list.replaceChildren();
+    histories.forEach((item, index) => {
+      const li = document.createElement('li');
+      const label = document.createElement('span');
+      label.textContent = `${item.name} (${item.coordinates.length} 點) `;
+      const button = document.createElement('button');
+      button.type = 'button'; button.textContent = '顯示'; button.setAttribute('aria-label', `顯示路徑 ${item.name}`);
+      button.addEventListener('click', () => fitCoordinates(item.coordinates));
+      li.append(label, button);
+      list.appendChild(li);
+    });
+  }
+  function fitCoordinates(points) {
+    if (!map || !Array.isArray(points) || !points.length) return;
+    if (points.length === 1) { map.easeTo({ center: points[0], zoom: 16 }); return; }
+    const bounds = points.reduce((result, point) => result.extend(point), new maplibregl.LngLatBounds(points[0], points[0]));
+    map.fitBounds(bounds, { padding: { top: 50, right: 50, bottom: 60, left: 390 }, maxZoom: 16, duration: 450 });
+  }
+  function hideVehicleMarker() {
+    if (marker) { marker.remove(); marker = null; }
+    latestPosition = null;
+    $('coord').textContent = '—'; $('speed').textContent = '—'; $('course').textContent = '—';
+  }
+  function addPosition(lon, lat, details = {}) {
+    if (!isRecording || !Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) return;
+    lastFixAt = Date.now();
+    latestPosition = [lon, lat];
+    $('coord').textContent = `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+    $('fix').textContent = details.fix || '定位有效';
+    $('speed').textContent = details.speed == null ? '—' : `${details.speed.toFixed(1)} km/h`;
+    $('course').textContent = details.course == null ? '—' : `${details.course.toFixed(1)}°`;
+    if (map) {
+      if (!marker) {
+        const element = document.createElement('div');
+        element.setAttribute('aria-label', '車輛目前位置');
+        element.style.cssText = 'width:20px;height:20px;border-radius:50%;background:#0ea5e9;border:3px solid white;box-shadow:0 0 0 5px #0ea5e944,0 2px 8px #0009';
+        marker = new maplibregl.Marker({ element, anchor: 'center' }).setLngLat(latestPosition).addTo(map);
+      } else marker.setLngLat(latestPosition);
+    }
+    const previous = currentPoints[currentPoints.length - 1];
+    const distance = previous ? Math.hypot((lon - previous[0]) * 111320 * Math.cos(lat * Math.PI / 180), (lat - previous[1]) * 110540) : Infinity;
+    if (distance > 1.5) {
+      currentPoints.push(latestPosition);
+      if (currentPoints.length > 20000) currentPoints.shift();
+      updateCurrentTrack();
+    }
+  }
+  function nmeaCoordinate(value, hemisphere) {
+    if (!value || !hemisphere) return null;
+    const raw = Number(value);
+    if (!Number.isFinite(raw)) return null;
+    const degrees = Math.floor(raw / 100);
+    const result = degrees + (raw - degrees * 100) / 60;
+    return hemisphere === 'S' || hemisphere === 'W' ? -result : result;
+  }
+  function validChecksum(sentence) {
+    const star = sentence.lastIndexOf('*');
+    if (star < 0) return true;
+    let checksum = 0;
+    for (let i = 1; i < star; i++) checksum ^= sentence.charCodeAt(i);
+    return checksum === parseInt(sentence.slice(star + 1, star + 3), 16);
+  }
+  function handleNmea(rawLine) {
+    const line = rawLine.trim();
+    if (!line.startsWith('$') || !validChecksum(line)) return;
+    const fields = line.split('*')[0].split(',');
+    const sentenceType = fields[0].slice(-3).toUpperCase();
+    let lat, lon, speed = null, course = null, hasFix = false;
+    if (sentenceType === 'GGA') {
+      hasFix = Number(fields[6]) > 0;
+      lat = nmeaCoordinate(fields[2], fields[3]); lon = nmeaCoordinate(fields[4], fields[5]);
+    } else if (sentenceType === 'RMC') {
+      hasFix = fields[2] === 'A';
+      lat = nmeaCoordinate(fields[3], fields[4]); lon = nmeaCoordinate(fields[5], fields[6]);
+      const knots = Number(fields[7]); if (fields[7] && Number.isFinite(knots)) speed = knots * 1.852;
+      const heading = Number(fields[8]); if (fields[8] && Number.isFinite(heading)) course = heading;
+    } else return;
+    if (hasFix && Number.isFinite(lat) && Number.isFinite(lon)) {
+      addPosition(lon, lat, { speed, course, fix: `${sentenceType} 定位有效` });
+      if (isRecording) setStatus('行程記錄中，已接收北斗定位。', 'ok');
+    } else if (sentenceType === 'RMC' && fields[2] === 'V' && isRecording) $('fix').textContent = '等待有效定位';
+  }
+  function connectSocket() {
+    if (!('WebSocket' in window)) { setStatus('此瀏覽器不支援 WebSocket。', 'err'); return; }
+    if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) return;
+    const host = location.hostname || 'localhost';
+    const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    setStatus(`正在連接樹莓派 UART（${host}:8765）…`);
+    socket = new WebSocket(`${protocol}//${host}:8765`);
+    socket.onopen = () => { if (isRecording) setStatus('UART 已連線，等待有效北斗定位…', 'ok'); };
+    socket.onmessage = (event) => { if (typeof event.data === 'string') event.data.split(/\r?\n/).forEach(handleNmea); };
+    socket.onerror = () => { if (isRecording) setStatus('UART 連線失敗。請確認 uart_nmea_bridge.py 已在樹莓派啟動。', 'err'); };
+    socket.onclose = () => {
+      if (isRecording) {
+        setStatus('UART 連線中斷；5 秒後重新連接。', 'err');
+        clearTimeout(reconnectTimer); reconnectTimer = setTimeout(connectSocket, 5000);
+      }
+    };
+  }
+  function setRecording(active) {
+    isRecording = active;
+    const button = $('btnRecord');
+    button.textContent = active ? '結束並儲存這段路' : '開始一段路';
+    button.classList.toggle('recording', active); button.classList.toggle('primary', !active);
+    button.setAttribute('aria-pressed', String(active));
+    $('btnCenter').disabled = !active;
+    if (active) {
+      currentPoints = []; currentStartedAt = new Date().toISOString();
+      currentName = `行程 ${new Date().toLocaleString('zh-TW')}`;
+      lastFixAt = 0; hideVehicleMarker(); $('fix').textContent = '等待定位';
+      updateCurrentTrack(); connectSocket();
+    } else {
+      clearTimeout(reconnectTimer);
+      if (currentPoints.length > 1) {
+        histories.unshift({ name: currentName, date: currentStartedAt || new Date().toISOString(), endedAt: new Date().toISOString(), coordinates: currentPoints.map((point) => [...point]), assets: [] });
+        histories = histories.slice(0, 100);
+        saveHistory(); renderHistory();
+        setStatus(`已結束並儲存「${currentName}」，共 ${currentPoints.length} 個定位點。`, 'ok');
+      } else setStatus('這段路已結束；沒有足夠定位點可保存。');
+      currentPoints = []; currentName = ''; currentStartedAt = null; lastFixAt = 0;
+      hideVehicleMarker(); $('fix').textContent = '車輛未啟動'; updateCurrentTrack();
+    }
+  }
+  function parseGpx(text) {
+    const xml = new DOMParser().parseFromString(text, 'application/xml');
+    if (xml.querySelector('parsererror')) throw new Error('GPX XML 格式錯誤');
+    let routes = [...xml.querySelectorAll('trkseg, rte')].map((segment) => [...segment.querySelectorAll('trkpt, rtept')].map((point) => [Number(point.getAttribute('lon')), Number(point.getAttribute('lat'))]).filter((point) => point.every(Number.isFinite))).filter((points) => points.length > 1);
+    if (!routes.length) { const points = [...xml.querySelectorAll('trkpt, rtept')].map((point) => [Number(point.getAttribute('lon')), Number(point.getAttribute('lat'))]).filter((point) => point.every(Number.isFinite)); if (points.length > 1) routes = [points]; }
+    return routes;
+  }
+  function validLine(points) {
+    return Array.isArray(points) && points.length > 1 && points.every((point) => Array.isArray(point) && Number.isFinite(Number(point[0])) && Number.isFinite(Number(point[1])) && Math.abs(Number(point[0])) <= 180 && Math.abs(Number(point[1])) <= 90);
+  }
+  function getFeatureAssets(properties) {
+    const raw = properties && (properties.assets || properties.files || properties.models);
+    if (!Array.isArray(raw)) return [];
+    return raw.filter((asset) => typeof asset === 'string' || (asset && typeof asset === 'object')).slice(0, 50).map((asset) => typeof asset === 'string' ? { name: asset, url: asset } : { name: String(asset.name || asset.path || asset.url || '相關檔案'), url: String(asset.url || asset.path || '') });
+  }
+  function exportGpx() {
+    if (currentPoints.length < 2) return;
+    const esc = (value) => String(value).replace(/[&<>"']/g, (char) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;' }[char]));
+    const points = currentPoints.map(([lon, lat]) => `      <trkpt lat="${lat}" lon="${lon}"></trkpt>`).join('\n');
+    const content = `<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Holo-Map" xmlns="http://www.topografix.com/GPX/1/1"><trk><name>${esc(currentName)}</name><trkseg>\n${points}\n</trkseg></trk></gpx>`;
+    const url = URL.createObjectURL(new Blob([content], { type: 'application/gpx+xml' }));
+    const anchor = document.createElement('a'); anchor.href = url; anchor.download = `${currentName.replace(/[^\p{L}\p{N}_-]+/gu, '_') || 'holo-map-track'}.gpx`; anchor.click(); URL.revokeObjectURL(url);
+  }
+
+  if (window.maplibregl) {
+    map = new maplibregl.Map({ container: 'map', style: 'https://tiles.openfreemap.org/styles/liberty', center: [120.97, 23.9], zoom: 8, attributionControl: true, dragRotate: false, pitchWithRotate: false, touchPitch: false });
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
+    map.on('load', () => {
+      map.addSource('history-tracks', { type: 'geojson', data: historyFeatureCollection() });
+      map.addLayer({ id: 'history-track-lines', type: 'line', source: 'history-tracks', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#a78bfa', 'line-width': 4, 'line-opacity': 0.8 } });
+      map.addSource('current-track', { type: 'geojson', data: EMPTY_FC });
+      map.addLayer({ id: 'current-track-line', type: 'line', source: 'current-track', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#f97316', 'line-width': 5, 'line-opacity': 0.95 } });
+      map.on('click', 'history-track-lines', (event) => {
+        const feature = event.features && event.features[0]; const item = feature && histories[Number(feature.properties.id)]; if (!item) return;
+        const content = document.createElement('div'); const title = document.createElement('strong'); title.textContent = item.name;
+        const detail = document.createElement('div'); detail.textContent = `${new Date(item.date).toLocaleString('zh-TW')} · ${item.coordinates.length} 個定位點`;
+        content.append(title, detail);
+        if (Array.isArray(item.assets) && item.assets.length) {
+          const links = document.createElement('div'); links.className = 'asset-links';
+          item.assets.forEach((asset) => { const name = typeof asset === 'string' ? asset : asset.name; const href = typeof asset === 'string' ? asset : asset.url; const row = document.createElement('div');
+            if (href && /^(https?:|\/|\.\/|\.\.\/)/i.test(href)) { const a = document.createElement('a'); a.href = href; a.textContent = name || href; a.target = '_blank'; a.rel = 'noopener noreferrer'; row.appendChild(a); }
+            else row.textContent = name || '相關檔案';
+            links.appendChild(row);
+          }); content.appendChild(links);
+        } else { const info = document.createElement('div'); info.textContent = '尚未關聯照片、影片或 PLY 模型。'; content.appendChild(info); }
+        new maplibregl.Popup({ maxWidth: '300px' }).setLngLat(event.lngLat).setDOMContent(content).addTo(map);
+      });
+      map.on('mouseenter', 'history-track-lines', () => { map.getCanvas().style.cursor = 'pointer'; });
+      map.on('mouseleave', 'history-track-lines', () => { map.getCanvas().style.cursor = ''; });
+      renderHistory(); updateCurrentTrack(); setStatus('地圖就緒。按「開始一段路」開始定位與記錄。');
+    });
+    map.on('error', () => setStatus('地圖底圖載入失敗，請確認樹莓派可連上網路。', 'err'));
+  } else setStatus('無法載入��圖程式，請確認網路連線後重新整理。', 'err');
+
+  $('btnRecord').addEventListener('click', () => setRecording(!isRecording));
+  $('btnCenter').addEventListener('click', () => { if (latestPosition && map) map.easeTo({ center: latestPosition, zoom: Math.max(map.getZoom(), 15) }); });
+  $('btnFit').addEventListener('click', () => fitCoordinates(currentPoints));
+  $('btnExport').addEventListener('click', exportGpx);
+  $('routeFile').addEventListener('change', async (event) => {
+    const file = event.target.files && event.target.files[0]; if (!file) return;
+    try {
+      const text = await file.text(); const extension = file.name.split('.').pop().toLowerCase(); let routes = [];
+      if (extension === 'gpx') routes = parseGpx(text);
+      else {
+        const data = JSON.parse(text); const features = data.type === 'FeatureCollection' ? data.features : data.type === 'Feature' ? [data] : [];
+        for (const feature of features) {
+          const geometry = feature && feature.geometry; if (!geometry) continue;
+          if (geometry.type === 'LineString' && validLine(geometry.coordinates)) routes.push({ coordinates: geometry.coordinates.map((point) => [Number(point[0]), Number(point[1])]), assets: getFeatureAssets(feature.properties) });
+          if (geometry.type === 'MultiLineString') for (const part of geometry.coordinates) if (validLine(part)) routes.push({ coordinates: part.map((point) => [Number(point[0]), Number(point[1])]), assets: getFeatureAssets(feature.properties) });
+        }
+      }
+      if (!routes.length) throw new Error('檔案中找不到有效的路徑座標。');
+      if (Array.isArray(routes[0])) routes = routes.map((coordinates) => ({ coordinates, assets: [] }));
+      routes.forEach((route, index) => histories.unshift({ name: routes.length > 1 ? `${file.name} (${index + 1})` : file.name, date: new Date().toISOString(), coordinates: route.coordinates, assets: route.assets || [] }));
+      histories = histories.slice(0, 100); saveHistory(); renderHistory(); fitCoordinates(routes[0].coordinates);
+      setStatus(`已匯入 ${file.name}，共 ${routes.length} 條歷史路徑。`, 'ok');
+    } catch (error) { setStatus(`匯入失敗：${error.message || error}`, 'err'); }
+    event.target.value = '';
+  });
+  setInterval(() => {
+    if (isRecording && lastFixAt && Date.now() - lastFixAt > LIVE_TIMEOUT_MS) {
+      hideVehicleMarker(); lastFixAt = 0; $('fix').textContent = '定位訊號逾時';
+      setStatus('超過 10 秒未收到有效定位；記錄仍持續，訊號恢復後會重新顯示車輛。', 'err');
+    }
+  }, 1000);
+  renderHistory();
 })();
 </script>
 </body>
