@@ -7,7 +7,7 @@
 <title>北斗 NMEA 即時定位 | Holo-Map</title>
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" crossorigin="anonymous">
 <style>
-:root{color-scheme:dark;--panel:rgba(15,23,42,.96);--field:#111c31;--line:#334155;--text:#e2e8f0;--muted:#94a3b8}*{box-sizing:border-box}html,body{height:100%;margin:0;font:14px/1.45 system-ui,"Noto Sans TC",sans-serif;background:#0b1220;color:var(--text)}#map{position:absolute;inset:0}.panel{position:absolute;z-index:5;left:12px;top:12px;width:min(370px,calc(100vw - 24px));max-height:calc(100vh - 24px);overflow:auto;padding:14px;background:var(--panel);border:1px solid #475569;border-radius:12px;box-shadow:0 10px 32px #0008;backdrop-filter:blur(5px)}h1{font-size:17px;margin:0 0 2px}.sub,.hint{color:var(--muted);font-size:12px;margin:0 0 10px}.row{display:flex;gap:7px;margin:7px 0}.row>*{min-width:0;flex:1}button,input[type=file]{font:inherit;color:var(--text);background:#1e293b;border:1px solid #475569;border-radius:7px;padding:8px}button{cursor:pointer;min-height:40px}button:hover:not(:disabled){background:#334155}button:disabled{opacity:.5;cursor:default}.primary{background:#0369a1;border-color:#0284c7}.recording{background:#991b1b;border-color:#ef4444}.status{padding:8px 10px;margin:8px 0;background:var(--field);border:1px solid var(--line);border-radius:7px;font-size:12px}.status.ok{color:#4ade80}.status.err{color:#fca5a5}.grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.field{background:var(--field);padding:7px;border-radius:7px;border:1px solid #24324a}.field span{display:block;color:var(--muted);font-size:11px}.field b{font-size:12px;overflow-wrap:anywhere}.section{border-top:1px dashed #475569;margin-top:10px;padding-top:8px}.section-title{font-size:12px;font-weight:600;margin:0 0 6px}.history{font-size:12px;margin:0;padding-left:20px}.history li{margin:6px 0;overflow-wrap:anywhere}.history button{min-height:28px;padding:3px 7px;font-size:11px}.asset-links a{color:#7dd3fc;overflow-wrap:anywhere}.maplibregl-ctrl-group button{min-height:29px;padding:0}@media(max-width:560px){.panel{left:8px;top:8px;width:calc(100vw - 16px);max-height:55vh;padding:11px}h1{font-size:16px}}
+:root{color-scheme:dark;--panel:rgba(15,23,42,.96);--field:#111c31;--line:#334155;--text:#e2e8f0;--muted:#94a3b8}*{box-sizing:border-box}html,body{height:100%;margin:0;font:14px/1.45 system-ui,"Noto Sans TC",sans-serif;background:#0b1220;color:var(--text)}#map{position:absolute;inset:0}.panel{position:absolute;z-index:5;left:12px;top:12px;width:min(370px,calc(100vw - 24px));max-height:calc(100vh - 24px);overflow:auto;padding:14px;background:var(--panel);border:1px solid #475569;border-radius:12px;box-shadow:0 10px 32px #0008;backdrop-filter:blur(5px)}h1{font-size:17px;margin:0 0 2px}.sub,.hint{color:var(--muted);font-size:12px;margin:0 0 10px}.row{display:flex;gap:7px;margin:7px 0}.row>*{min-width:0;flex:1}button,input[type=file]{font:inherit;color:var(--text);background:#1e293b;border:1px solid #475569;border-radius:7px;padding:8px}button{cursor:pointer;min-height:40px}button:hover:not(:disabled){background:#334155}button:disabled{opacity:.5;cursor:default}.primary{background:#0369a1;border-color:#0284c7}.recording{background:#991b1b;border-color:#ef4444}.status{padding:8px 10px;margin:8px 0;background:var(--field);border:1px solid var(--line);border-radius:7px;font-size:12px}.status.ok{color:#4ade80}.status.err{color:#fca5a5}.grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.field{background:var(--field);padding:7px;border-radius:7px;border:1px solid #24324a}.field span{display:block;color:var(--muted);font-size:11px}.field b{font-size:12px;overflow-wrap:anywhere}.section{border-top:1px dashed #475569;margin-top:10px;padding-top:8px}.section-title{font-size:12px;font-weight:600;margin:0 0 6px}.history{font-size:12px;margin:0;padding-left:20px}.history li{margin:6px 0;overflow-wrap:anywhere}.history button{min-height:28px;padding:3px 7px;font-size:11px}.maplibregl-ctrl-group button{min-height:29px;padding:0}@media(max-width:560px){.panel{left:8px;top:8px;width:calc(100vw - 16px);max-height:55vh;padding:11px}h1{font-size:16px}}
 </style>
 </head>
 <body>
@@ -34,7 +34,7 @@
     <p class="hint">支援 GPX、GeoJSON／JSON。點選歷史路徑可查看行程與關聯檔案資訊。</p>
     <ul id="historyList" class="history"></ul>
   </div>
-  <p class="hint">按「開始一段路」才連接 UART、顯示即時位置並記錄；再按一次結束並儲存。位置 10 秒未更新會隱藏標記。歷史紀錄保存在此瀏覽器；檔案和 PLY 3D 檢視可後續掛接。</p>
+  <p class="hint">按「開始一段路」才連接 UART、顯示即時位置並記錄；再按一次結束並儲存。位置 10 秒未更新會隱藏標記。歷史紀錄保存在此瀏覽器；相機與 PLY 檢視會在後續步驟接上。</p>
 </main>
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js" crossorigin="anonymous"></script>
 <script>
@@ -96,12 +96,13 @@
     map.getSource('history-tracks').setData(historyFeatureCollection());
     const list = $('historyList');
     list.replaceChildren();
-    histories.forEach((item, index) => {
+    histories.forEach((item) => {
       const li = document.createElement('li');
       const label = document.createElement('span');
       label.textContent = `${item.name} (${item.coordinates.length} 點) `;
       const button = document.createElement('button');
-      button.type = 'button'; button.textContent = '顯示'; button.setAttribute('aria-label', `顯示路徑 ${item.name}`);
+      button.type = 'button';
+      button.textContent = '顯示';
       button.addEventListener('click', () => fitCoordinates(item.coordinates));
       li.append(label, button);
       list.appendChild(li);
@@ -222,20 +223,18 @@
     const xml = new DOMParser().parseFromString(text, 'application/xml');
     if (xml.querySelector('parsererror')) throw new Error('GPX XML 格式錯誤');
     let routes = [...xml.querySelectorAll('trkseg, rte')].map((segment) => [...segment.querySelectorAll('trkpt, rtept')].map((point) => [Number(point.getAttribute('lon')), Number(point.getAttribute('lat'))]).filter((point) => point.every(Number.isFinite))).filter((points) => points.length > 1);
-    if (!routes.length) { const points = [...xml.querySelectorAll('trkpt, rtept')].map((point) => [Number(point.getAttribute('lon')), Number(point.getAttribute('lat'))]).filter((point) => point.every(Number.isFinite)); if (points.length > 1) routes = [points]; }
+    if (!routes.length) {
+      const points = [...xml.querySelectorAll('trkpt, rtept')].map((point) => [Number(point.getAttribute('lon')), Number(point.getAttribute('lat'))]).filter((point) => point.every(Number.isFinite));
+      if (points.length > 1) routes = [points];
+    }
     return routes;
   }
   function validLine(points) {
     return Array.isArray(points) && points.length > 1 && points.every((point) => Array.isArray(point) && Number.isFinite(Number(point[0])) && Number.isFinite(Number(point[1])) && Math.abs(Number(point[0])) <= 180 && Math.abs(Number(point[1])) <= 90);
   }
-  function getFeatureAssets(properties) {
-    const raw = properties && (properties.assets || properties.files || properties.models);
-    if (!Array.isArray(raw)) return [];
-    return raw.filter((asset) => typeof asset === 'string' || (asset && typeof asset === 'object')).slice(0, 50).map((asset) => typeof asset === 'string' ? { name: asset, url: asset } : { name: String(asset.name || asset.path || asset.url || '相關檔案'), url: String(asset.url || asset.path || '') });
-  }
   function exportGpx() {
     if (currentPoints.length < 2) return;
-    const esc = (value) => String(value).replace(/[&<>"']/g, (char) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;' }[char]));
+    const esc = (value) => String(value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[char]));
     const points = currentPoints.map(([lon, lat]) => `      <trkpt lat="${lat}" lon="${lon}"></trkpt>`).join('\n');
     const content = `<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Holo-Map" xmlns="http://www.topografix.com/GPX/1/1"><trk><name>${esc(currentName)}</name><trkseg>\n${points}\n</trkseg></trk></gpx>`;
     const url = URL.createObjectURL(new Blob([content], { type: 'application/gpx+xml' }));
@@ -243,7 +242,16 @@
   }
 
   if (window.maplibregl) {
-    map = new maplibregl.Map({ container: 'map', style: 'https://tiles.openfreemap.org/styles/liberty', center: [120.97, 23.9], zoom: 8, attributionControl: true, dragRotate: false, pitchWithRotate: false, touchPitch: false });
+    map = new maplibregl.Map({
+      container: 'map',
+      style: 'https://tiles.openfreemap.org/styles/liberty',
+      center: [120.97, 23.9],
+      zoom: 8,
+      attributionControl: true,
+      dragRotate: false,
+      pitchWithRotate: false,
+      touchPitch: false
+    });
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
     map.on('load', () => {
       map.addSource('history-tracks', { type: 'geojson', data: historyFeatureCollection() });
@@ -251,18 +259,15 @@
       map.addSource('current-track', { type: 'geojson', data: EMPTY_FC });
       map.addLayer({ id: 'current-track-line', type: 'line', source: 'current-track', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#f97316', 'line-width': 5, 'line-opacity': 0.95 } });
       map.on('click', 'history-track-lines', (event) => {
-        const feature = event.features && event.features[0]; const item = feature && histories[Number(feature.properties.id)]; if (!item) return;
-        const content = document.createElement('div'); const title = document.createElement('strong'); title.textContent = item.name;
-        const detail = document.createElement('div'); detail.textContent = `${new Date(item.date).toLocaleString('zh-TW')} · ${item.coordinates.length} 個定位點`;
+        const feature = event.features && event.features[0];
+        const item = feature && histories[Number(feature.properties.id)];
+        if (!item) return;
+        const content = document.createElement('div');
+        const title = document.createElement('strong');
+        title.textContent = item.name;
+        const detail = document.createElement('div');
+        detail.textContent = `${new Date(item.date).toLocaleString('zh-TW')} · ${item.coordinates.length} 個定位點`;
         content.append(title, detail);
-        if (Array.isArray(item.assets) && item.assets.length) {
-          const links = document.createElement('div'); links.className = 'asset-links';
-          item.assets.forEach((asset) => { const name = typeof asset === 'string' ? asset : asset.name; const href = typeof asset === 'string' ? asset : asset.url; const row = document.createElement('div');
-            if (href && /^(https?:|\/|\.\/|\.\.\/)/i.test(href)) { const a = document.createElement('a'); a.href = href; a.textContent = name || href; a.target = '_blank'; a.rel = 'noopener noreferrer'; row.appendChild(a); }
-            else row.textContent = name || '相關檔案';
-            links.appendChild(row);
-          }); content.appendChild(links);
-        } else { const info = document.createElement('div'); info.textContent = '尚未關聯照片、影片或 PLY 模型。'; content.appendChild(info); }
         new maplibregl.Popup({ maxWidth: '300px' }).setLngLat(event.lngLat).setDOMContent(content).addTo(map);
       });
       map.on('mouseenter', 'history-track-lines', () => { map.getCanvas().style.cursor = 'pointer'; });
@@ -270,7 +275,7 @@
       renderHistory(); updateCurrentTrack(); setStatus('地圖就緒。按「開始一段路」開始定位與記錄。');
     });
     map.on('error', () => setStatus('地圖底圖載入失敗，請確認樹莓派可連上網路。', 'err'));
-  } else setStatus('無法載入��圖程式，請確認網路連線後重新整理。', 'err');
+  } else setStatus('無法載入地圖程式，請確認網路連線後重新整理。', 'err');
 
   $('btnRecord').addEventListener('click', () => setRecording(!isRecording));
   $('btnCenter').addEventListener('click', () => { if (latestPosition && map) map.easeTo({ center: latestPosition, zoom: Math.max(map.getZoom(), 15) }); });
@@ -279,20 +284,24 @@
   $('routeFile').addEventListener('change', async (event) => {
     const file = event.target.files && event.target.files[0]; if (!file) return;
     try {
-      const text = await file.text(); const extension = file.name.split('.').pop().toLowerCase(); let routes = [];
+      const text = await file.text();
+      const extension = file.name.split('.').pop().toLowerCase();
+      let routes = [];
       if (extension === 'gpx') routes = parseGpx(text);
       else {
-        const data = JSON.parse(text); const features = data.type === 'FeatureCollection' ? data.features : data.type === 'Feature' ? [data] : [];
+        const data = JSON.parse(text);
+        const features = data.type === 'FeatureCollection' ? data.features : data.type === 'Feature' ? [data] : [];
         for (const feature of features) {
-          const geometry = feature && feature.geometry; if (!geometry) continue;
-          if (geometry.type === 'LineString' && validLine(geometry.coordinates)) routes.push({ coordinates: geometry.coordinates.map((point) => [Number(point[0]), Number(point[1])]), assets: getFeatureAssets(feature.properties) });
-          if (geometry.type === 'MultiLineString') for (const part of geometry.coordinates) if (validLine(part)) routes.push({ coordinates: part.map((point) => [Number(point[0]), Number(point[1])]), assets: getFeatureAssets(feature.properties) });
+          const geometry = feature && feature.geometry;
+          if (!geometry) continue;
+          if (geometry.type === 'LineString' && validLine(geometry.coordinates)) routes.push(geometry.coordinates.map((point) => [Number(point[0]), Number(point[1])]));
+          if (geometry.type === 'MultiLineString') for (const part of geometry.coordinates) if (validLine(part)) routes.push(part.map((point) => [Number(point[0]), Number(point[1])]));
         }
       }
       if (!routes.length) throw new Error('檔案中找不到有效的路徑座標。');
-      if (Array.isArray(routes[0])) routes = routes.map((coordinates) => ({ coordinates, assets: [] }));
-      routes.forEach((route, index) => histories.unshift({ name: routes.length > 1 ? `${file.name} (${index + 1})` : file.name, date: new Date().toISOString(), coordinates: route.coordinates, assets: route.assets || [] }));
-      histories = histories.slice(0, 100); saveHistory(); renderHistory(); fitCoordinates(routes[0].coordinates);
+      routes.forEach((route, index) => histories.unshift({ name: routes.length > 1 ? `${file.name} (${index + 1})` : file.name, date: new Date().toISOString(), coordinates: route, assets: [] }));
+      histories = histories.slice(0, 100);
+      saveHistory(); renderHistory(); fitCoordinates(routes[0]);
       setStatus(`已匯入 ${file.name}，共 ${routes.length} 條歷史路徑。`, 'ok');
     } catch (error) { setStatus(`匯入失敗：${error.message || error}`, 'err'); }
     event.target.value = '';
