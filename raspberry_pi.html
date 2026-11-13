@@ -32,189 +32,321 @@
   <div id="map" aria-label="互動地圖"></div>
   <main class="panel">
     <h1>Holo-Map｜樹莓派版</h1>
+    <p class="hint"><a href="./bds_map.html" style="color:#7dd3fc">開啟 UART 行程儀表板</a></p>
     <div id="status" role="status" aria-live="polite">地圖載入中…</div>
     <div class="row">
-      <button id="serialBtn" class="primary" type="button">連接 USB GPS</button>
-      <button id="geoBtn" type="button">使用裝置定位</button>
+      <button id="serialBtn" class="primary" type="button" disabled>連接 USB GPS</button>
+      <button id="geoBtn" type="button" disabled>使用裝置定位</button>
     </div>
     <div id="coords" class="hint">座標：尚未定位</div>
     <hr>
     <label for="routeFile">匯入路徑（GPX／GeoJSON／JSON／KML）</label>
-    <input id="routeFile" type="file" accept=".gpx,.geojson,.json,.kml,application/json,application/gpx+xml">
+    <input id="routeFile" type="file" disabled accept=".gpx,.geojson,.json,.kml,application/json,application/gpx+xml">
     <p class="hint">在地圖上點選路徑，可查看匯入檔名及路徑名稱。地圖需要網路連線載入底圖。</p>
   </main>
 
   <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+  <script src="./nmea.js"></script>
   <script>
   (() => {
     'use strict';
     const $ = (id) => document.getElementById(id);
-    const status = $('status');
-    const coords = $('coords');
-    let map;
-    let serialReader;
+    const EMPTY = { type: 'FeatureCollection', features: [] };
+    const MAX_FILE_BYTES = 10 * 1024 * 1024;
+    const MAX_COORDINATES = 100000;
+    let map = null;
+    let mapReady = false;
+    let serialSession = null;
+    let geoWatch = null;
+    let geoGeneration = 0;
     let track = [];
     let routeFeatures = [];
     let currentFileUrl = '';
+    let currentFileName = '';
+    let activePopup = null;
+    let importGeneration = 0;
 
-    function setStatus(message) { status.textContent = message; }
+    function setStatus(message) { $('status').textContent = message; }
+    function validPoint(point) {
+      return Array.isArray(point) && point.length >= 2 && Number.isFinite(point[0]) && Number.isFinite(point[1]) && Math.abs(point[0]) <= 180 && Math.abs(point[1]) <= 90;
+    }
     function makePoint(lon, lat) {
-      if (!Number.isFinite(lon) || !Number.isFinite(lat) || Math.abs(lat) > 90 || Math.abs(lon) > 180) return;
-      coords.textContent = `座標：${lat.toFixed(6)}, ${lon.toFixed(6)}`;
-      if (!map) return;
-      if (!map.getSource('position')) {
-        map.addSource('position', { type: 'geojson', data: { type: 'Feature', geometry: { type: 'Point', coordinates: [lon, lat] }, properties: {} } });
-        map.addLayer({ id: 'position-point', type: 'circle', source: 'position', paint: { 'circle-radius': 8, 'circle-color': '#0ea5e9', 'circle-stroke-width': 3, 'circle-stroke-color': '#fff' } });
-      } else {
-        map.getSource('position').setData({ type: 'Feature', geometry: { type: 'Point', coordinates: [lon, lat] }, properties: {} });
-      }
+      if (!mapReady || !validPoint([lon, lat])) return;
+      $('coords').textContent = `座標：${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+      map.getSource('position').setData({ type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: [lon, lat] } });
       map.easeTo({ center: [lon, lat], duration: 350 });
       track.push([lon, lat]);
       if (track.length > 3000) track.shift();
-      const source = map.getSource('live-track');
-      if (source) source.setData(track.length > 1 ? { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: track } } : { type: 'FeatureCollection', features: [] });
+      map.getSource('live-track').setData(track.length > 1 ? { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: track } } : EMPTY);
+    }
+    function hidePosition() {
+      if (mapReady) map.getSource('position').setData(EMPTY);
+      $('coords').textContent = '座標：尚未定位';
+    }
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
+    }
+    function showImportedPopup(event) {
+      const feature = event.features && event.features[0];
+      if (!feature) return;
+      if (activePopup) activePopup.remove();
+      const name = feature.properties && (feature.properties.name || feature.properties.title) || '匯入路徑';
+      const link = currentFileUrl ? `<br><a href="${escapeHtml(currentFileUrl)}" download="${escapeHtml(currentFileName)}">下載原始檔：${escapeHtml(currentFileName)}</a>` : '';
+      activePopup = new maplibregl.Popup({ maxWidth: '280px' }).setLngLat(event.lngLat).setHTML(`<strong>${escapeHtml(name)}</strong><br>${escapeHtml(currentFileName)}${link}`).addTo(map);
     }
 
-    if (window.maplibregl) {
-      map = new maplibregl.Map({
-        container: 'map', style: 'https://tiles.openfreemap.org/styles/liberty',
-        center: [120.97, 23.9], zoom: 7, attributionControl: true,
-        dragRotate: false, pitchWithRotate: false, touchPitch: false
-      });
+    if (window.maplibregl && window.HoloNmea) {
+      map = new maplibregl.Map({ container: 'map', style: 'https://tiles.openfreemap.org/styles/liberty', center: [120.97, 23.9], zoom: 7, attributionControl: true, dragRotate: false, pitchWithRotate: false, touchPitch: false });
       map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
       map.on('load', () => {
-        map.addSource('live-track', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+        map.addSource('position', { type: 'geojson', data: EMPTY });
+        map.addLayer({ id: 'position-point', type: 'circle', source: 'position', paint: { 'circle-radius': 8, 'circle-color': '#0ea5e9', 'circle-stroke-width': 3, 'circle-stroke-color': '#fff' } });
+        map.addSource('live-track', { type: 'geojson', data: EMPTY });
         map.addLayer({ id: 'live-track-line', type: 'line', source: 'live-track', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#f97316', 'line-width': 4 } });
+        map.addSource('imported-routes', { type: 'geojson', data: EMPTY });
+        map.addLayer({ id: 'imported-routes', type: 'line', source: 'imported-routes', filter: ['==', ['geometry-type'], 'LineString'], layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#f97316', 'line-width': 6, 'line-opacity': 0.9 } });
+        map.addLayer({ id: 'imported-points', type: 'circle', source: 'imported-routes', filter: ['==', ['geometry-type'], 'Point'], paint: { 'circle-radius': 7, 'circle-color': '#f97316', 'circle-stroke-width': 2, 'circle-stroke-color': '#fff' } });
+        mapReady = true;
+        ['serialBtn', 'geoBtn', 'routeFile'].forEach((id) => { $(id).disabled = false; });
         setStatus('地圖就緒。可連接 USB GPS、使用瀏覽器定位或匯入路徑檔。');
       });
-      map.on('error', () => setStatus('地圖載入遇到問題，請確認樹莓派已連上網路。'));
-      map.on('click', 'imported-routes', (event) => {
-        const feature = event.features && event.features[0];
-        if (!feature) return;
-        const name = feature.properties && (feature.properties.name || feature.properties.title) || '匯入路徑';
-        const link = currentFileUrl ? `<br><a href="${currentFileUrl}" download="${escapeHtml(currentFileName)}">下載原始檔：${escapeHtml(currentFileName)}</a>` : '';
-        new maplibregl.Popup({ maxWidth: '280px' }).setLngLat(event.lngLat).setHTML(`<strong>${escapeHtml(name)}</strong><br>${escapeHtml(currentFileName || '')}${link}`).addTo(map);
-      });
-      map.on('mouseenter', 'imported-routes', () => { map.getCanvas().style.cursor = 'pointer'; });
-      map.on('mouseleave', 'imported-routes', () => { map.getCanvas().style.cursor = ''; });
+      map.on('error', () => setStatus('地圖載入遇到問題，請確認網路連線。'));
+      for (const layer of ['imported-routes', 'imported-points']) {
+        map.on('click', layer, showImportedPopup);
+        map.on('mouseenter', layer, () => { map.getCanvas().style.cursor = 'pointer'; });
+        map.on('mouseleave', layer, () => { map.getCanvas().style.cursor = ''; });
+      }
     } else {
-      setStatus('無法載入地圖程式，請確認網路連線後重新整理。');
+      setStatus('無法載入地圖或 NMEA 程式，請確認網路連線後重新整理。');
     }
 
-    function escapeHtml(value) {
-      return String(value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+    async function cancelSerialReader(session) {
+      if (!session.reader) return;
+      if (!session.cancelPromise) session.cancelPromise = (async () => { try { await session.reader.cancel(); } catch (_) {} })();
+      await session.cancelPromise;
     }
-
-    function nmeaCoordinate(value, hemisphere) {
-      const number = Number(value);
-      if (!Number.isFinite(number) || !hemisphere) return null;
-      const degrees = Math.floor(number / 100);
-      const decimal = degrees + (number - degrees * 100) / 60;
-      return hemisphere === 'S' || hemisphere === 'W' ? -decimal : decimal;
+    async function stopSerial() {
+      const session = serialSession;
+      if (!session || session.stopping) return;
+      session.stopping = true;
+      $('serialBtn').disabled = true;
+      await cancelSerialReader(session);
+      await session.finished;
     }
-    function parseNmea(line) {
-      const fields = line.trim().split('*')[0].split(',');
-      const type = fields[0].slice(-3);
-      if (type === 'GGA' && fields[6] !== '0') {
-        return [nmeaCoordinate(fields[4], fields[5]), nmeaCoordinate(fields[2], fields[3])];
-      }
-      if (type === 'RMC' && fields[2] === 'A') {
-        return [nmeaCoordinate(fields[5], fields[6]), nmeaCoordinate(fields[3], fields[4])];
-      }
-      return null;
-    }
-
-    $('serialBtn').addEventListener('click', async () => {
-      if (!('serial' in navigator)) {
-        setStatus('此瀏覽器未提供 USB 序列埠功能。請使用 Chromium，或改按「使用裝置定位」。');
-        return;
-      }
+    async function startSerial() {
+      if (!mapReady || serialSession) return;
+      if (!('serial' in navigator)) { setStatus('此瀏覽器未提供 USB 序列埠功能。請使用 Chromium，或改按「使用裝置定位」。'); return; }
+      let finish;
+      const session = { port: null, reader: null, opened: false, stopping: false, finished: new Promise((resolve) => { finish = resolve; }) };
+      serialSession = session;
+      $('serialBtn').disabled = true;
+      let failure = null;
       try {
-        const port = await navigator.serial.requestPort();
-        await port.open({ baudRate: 115200 });
-        serialReader = port.readable.getReader();
+        session.port = await navigator.serial.requestPort();
+        if (session.stopping) return;
+        await session.port.open({ baudRate: 115200 });
+        session.opened = true;
+        if (session.stopping) return;
+        session.reader = session.port.readable.getReader();
+        $('serialBtn').textContent = '中斷 USB GPS';
+        $('serialBtn').disabled = false;
         const decoder = new TextDecoder();
         let buffer = '';
-        setStatus('USB GPS 已連線，等待 NMEA 定位資料…');
-        while (true) {
-          const { value, done } = await serialReader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split(/\r?\n/);
-          buffer = lines.pop() || '';
-          for (const line of lines) {
-            const point = parseNmea(line);
-            if (point && point[0] != null && point[1] != null) makePoint(point[0], point[1]);
+        let dropping = false;
+        setStatus('USB GPS 已連線，等待有效 NMEA 定位資料…');
+        while (!session.stopping) {
+          const { value, done } = await session.reader.read();
+          if (done || session.stopping) break;
+          const text = decoder.decode(value, { stream: true });
+          for (const character of text) {
+            if (character === '\n') {
+              if (!dropping) {
+                const sentence = HoloNmea.parseSentence(buffer.replace(/\r$/, ''));
+                if (sentence && sentence.hasFix) makePoint(sentence.lon, sentence.lat);
+                else if (sentence) { hidePosition(); setStatus('USB GPS 已連線，等待有效定位…'); }
+              }
+              buffer = '';
+              dropping = false;
+            } else if (!dropping) {
+              buffer += character;
+              if (buffer.length > 1024) { buffer = ''; dropping = true; }
+            }
           }
         }
       } catch (error) {
-        setStatus(`USB GPS 連線失敗：${error.message || error}`);
+        if (!session.stopping && error.name !== 'NotFoundError') failure = error;
       } finally {
-        if (serialReader) { try { serialReader.releaseLock(); } catch (_) {} serialReader = null; }
+        $('serialBtn').disabled = true;
+        await cancelSerialReader(session);
+        if (session.reader) { try { session.reader.releaseLock(); } catch (_) {} }
+        if (session.opened) { try { await session.port.close(); } catch (_) {} }
+        if (serialSession === session) {
+          serialSession = null;
+          $('serialBtn').textContent = '連接 USB GPS';
+          $('serialBtn').disabled = !mapReady;
+          hidePosition();
+          setStatus(failure ? `USB GPS 連線中斷：${failure.message || failure}` : 'USB GPS 已中斷。');
+        }
+        finish();
       }
+    }
+    $('serialBtn').addEventListener('click', () => serialSession ? stopSerial() : startSerial());
+    if ('serial' in navigator) navigator.serial.addEventListener('disconnect', (event) => {
+      if (serialSession && (event.target === serialSession.port || event.port === serialSession.port)) stopSerial();
     });
 
+    function stopGeolocation() {
+      geoGeneration++;
+      if (geoWatch != null) navigator.geolocation.clearWatch(geoWatch);
+      geoWatch = null;
+      $('geoBtn').textContent = '使用裝置定位';
+    }
     $('geoBtn').addEventListener('click', () => {
+      if (!mapReady) return;
+      if (geoWatch != null) { stopGeolocation(); hidePosition(); setStatus('裝置定位已停止。'); return; }
       if (!navigator.geolocation) { setStatus('此瀏覽器不支援裝置定位。'); return; }
+      const generation = ++geoGeneration;
       setStatus('正在等待定位…請允許瀏覽器使用位置。');
-      navigator.geolocation.watchPosition((position) => {
-        makePoint(position.coords.longitude, position.coords.latitude);
-        setStatus('裝置定位已啟用。');
-      }, (error) => setStatus(`無法取得裝置位置：${error.message}`), { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 });
+      $('geoBtn').textContent = '停止裝置定位';
+      try {
+        geoWatch = navigator.geolocation.watchPosition((position) => {
+          if (generation !== geoGeneration) return;
+          makePoint(position.coords.longitude, position.coords.latitude);
+          setStatus('裝置定位已啟用。');
+        }, (error) => {
+          if (generation !== geoGeneration) return;
+          stopGeolocation();
+          setStatus(`無法取得裝置位置：${error.message}`);
+        }, { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 });
+      } catch (error) { stopGeolocation(); setStatus(`無法取得裝置位置：${error.message}`); }
     });
 
-    let currentFileName = '';
+    function numericText(value) {
+      if (typeof value !== 'string' || !/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/.test(value.trim())) throw new Error('路徑含有無效座標');
+      const number = Number(value);
+      if (!Number.isFinite(number)) throw new Error('路徑含有無效座標');
+      return number;
+    }
+    function xmlPoint(element) {
+      const point = [numericText(element.getAttribute('lon')), numericText(element.getAttribute('lat'))];
+      if (!validPoint(point)) throw new Error('路徑座標超出經緯度範圍');
+      return point;
+    }
+    function descendants(element, name) { return [...element.getElementsByTagName('*')].filter((child) => child.localName === name); }
+    function children(element, name) { return [...element.children].filter((child) => child.localName === name); }
+    function nodeName(element, fallback) { return children(element, 'name')[0]?.textContent || fallback; }
+    function feature(geometry, name) { return { type: 'Feature', properties: { name }, geometry }; }
+    function parseRouteFile(text, extension) {
+      if (extension !== 'gpx' && extension !== 'kml') {
+        let data = JSON.parse(text);
+        if (data && data.type === 'Feature') data = { type: 'FeatureCollection', features: [data] };
+        if (!data || data.type !== 'FeatureCollection' || !Array.isArray(data.features)) throw new Error('GeoJSON 必須是 Feature 或 FeatureCollection');
+        return data;
+      }
+      const xml = new DOMParser().parseFromString(text, 'application/xml');
+      if (descendants(xml, 'parsererror').length) throw new Error('XML 檔案格式錯誤');
+      const features = [];
+      if (extension === 'gpx') {
+        for (const track of descendants(xml, 'trk')) {
+          for (const segment of children(track, 'trkseg')) {
+            const points = children(segment, 'trkpt').map(xmlPoint);
+            if (points.length > 1) features.push(feature({ type: 'LineString', coordinates: points }, nodeName(track, 'GPX 軌跡')));
+          }
+        }
+        for (const route of descendants(xml, 'rte')) {
+          const points = children(route, 'rtept').map(xmlPoint);
+          if (points.length > 1) features.push(feature({ type: 'LineString', coordinates: points }, nodeName(route, 'GPX 路徑')));
+        }
+        for (const waypoint of descendants(xml, 'wpt')) features.push(feature({ type: 'Point', coordinates: xmlPoint(waypoint) }, nodeName(waypoint, 'Waypoint')));
+      } else {
+        for (const place of descendants(xml, 'Placemark')) {
+          for (const geometry of [...descendants(place, 'LineString'), ...descendants(place, 'Point')]) {
+            const node = descendants(geometry, 'coordinates')[0];
+            if (!node) throw new Error('KML 缺少座標');
+            const points = node.textContent.trim().split(/\s+/).map((tuple) => {
+              const values = tuple.split(',');
+              if (values.length < 2 || values.length > 3) throw new Error('KML 座標格式錯誤');
+              return values.slice(0, 2).map(numericText);
+            });
+            const point = geometry.localName === 'Point';
+            if ((point && points.length !== 1) || (!point && points.length < 2)) throw new Error('KML 座標數量不足');
+            features.push(feature({ type: point ? 'Point' : 'LineString', coordinates: point ? points[0] : points }, nodeName(place, 'KML 路徑')));
+          }
+        }
+      }
+      return { type: 'FeatureCollection', features };
+    }
+    function validateRoutes(data, fileName) {
+      const coordinates = [];
+      function point(value) {
+        if (!validPoint(value)) throw new Error('路徑含有無效或超出範圍的座標');
+        if (coordinates.length >= MAX_COORDINATES) throw new Error('路徑過大，最多支援 100000 個座標');
+        const result = value.slice(0, 2);
+        coordinates.push(result);
+        return result;
+      }
+      function line(value) {
+        if (!Array.isArray(value) || value.length < 2) throw new Error('路徑至少需要兩個座標');
+        return value.map(point);
+      }
+      const features = [];
+      for (const item of data.features) {
+        if (!item || item.type !== 'Feature' || !item.geometry) continue;
+        const geometry = item.geometry;
+        let normalized;
+        if (geometry.type === 'Point') normalized = point(geometry.coordinates);
+        else if (geometry.type === 'MultiPoint') {
+          if (!Array.isArray(geometry.coordinates) || !geometry.coordinates.length) throw new Error('空白 MultiPoint');
+          normalized = geometry.coordinates.map(point);
+        } else if (geometry.type === 'LineString') normalized = line(geometry.coordinates);
+        else if (geometry.type === 'MultiLineString') {
+          if (!Array.isArray(geometry.coordinates) || !geometry.coordinates.length) throw new Error('空白 MultiLineString');
+          normalized = geometry.coordinates.map(line);
+        } else continue;
+        const properties = item.properties && typeof item.properties === 'object' && !Array.isArray(item.properties) ? item.properties : {};
+        features.push({ type: 'Feature', properties: { name: String(properties.name || properties.title || '匯入路徑'), sourceFile: fileName }, geometry: { type: geometry.type, coordinates: normalized } });
+      }
+      if (!features.length) throw new Error('檔案中找不到可顯示的路徑或標記');
+      return { features, coordinates };
+    }
     $('routeFile').addEventListener('change', async (event) => {
       const file = event.target.files && event.target.files[0];
-      if (!file || !map) return;
-      currentFileName = file.name;
-      if (currentFileUrl) URL.revokeObjectURL(currentFileUrl);
-      currentFileUrl = URL.createObjectURL(file);
+      if (!file || !mapReady) return;
+      const generation = ++importGeneration;
+      let candidateUrl = '';
+      let applied = false;
       try {
+        if (file.size > MAX_FILE_BYTES) throw new Error('檔案過大，最多支援 10 MB');
         const text = await file.text();
-        const extension = file.name.split('.').pop().toLowerCase();
-        let data;
-        if (extension === 'gpx') {
-          const xml = new DOMParser().parseFromString(text, 'application/xml');
-          if (xml.querySelector('parsererror')) throw new Error('GPX 檔案格式錯誤');
-          const features = [...xml.querySelectorAll('trk, rte, wpt')].map((element) => {
-            const points = [...element.querySelectorAll('trkpt, rtept, wpt')].map((point) => [Number(point.getAttribute('lon')), Number(point.getAttribute('lat'))]).filter((point) => point.every(Number.isFinite));
-            if (element.matches('wpt')) return points.length ? { type: 'Feature', properties: { name: element.querySelector('name')?.textContent || 'Waypoint' }, geometry: { type: 'Point', coordinates: points[0] } } : null;
-            return points.length > 1 ? { type: 'Feature', properties: { name: element.querySelector('name')?.textContent || 'GPX 路徑' }, geometry: { type: 'LineString', coordinates: points } } : null;
-          }).filter(Boolean);
-          data = { type: 'FeatureCollection', features };
-        } else if (extension === 'kml') {
-          const xml = new DOMParser().parseFromString(text, 'application/xml');
-          if (xml.querySelector('parsererror')) throw new Error('KML 檔案格式錯誤');
-          const features = [...xml.querySelectorAll('Placemark')].map((place) => {
-            const line = place.querySelector('LineString coordinates');
-            if (!line) return null;
-            const points = line.textContent.trim().split(/\s+/).map((tuple) => tuple.split(',').slice(0, 2).map(Number)).filter((point) => point.length === 2 && point.every(Number.isFinite));
-            return points.length > 1 ? { type: 'Feature', properties: { name: place.querySelector('name')?.textContent || 'KML 路徑' }, geometry: { type: 'LineString', coordinates: points } } : null;
-          }).filter(Boolean);
-          data = { type: 'FeatureCollection', features };
-        } else {
-          data = JSON.parse(text);
-          if (data.type === 'Feature') data = { type: 'FeatureCollection', features: [data] };
-          if (data.type !== 'FeatureCollection' || !Array.isArray(data.features)) throw new Error('GeoJSON 必須是 Feature 或 FeatureCollection');
-        }
-        routeFeatures = data.features.filter((feature) => feature.geometry && ['LineString', 'MultiLineString', 'Point', 'MultiPoint'].includes(feature.geometry.type)).map((feature) => ({ ...feature, properties: { ...(feature.properties || {}), sourceFile: file.name } }));
-        if (!routeFeatures.length) throw new Error('檔案中找不到可顯示的路徑');
-        if (map.getLayer('imported-routes')) map.removeLayer('imported-routes');
-        if (map.getSource('imported-routes')) map.removeSource('imported-routes');
-        map.addSource('imported-routes', { type: 'geojson', data: { type: 'FeatureCollection', features: routeFeatures } });
-        map.addLayer({ id: 'imported-routes', type: 'line', source: 'imported-routes', filter: ['in', ['geometry-type'], ['literal', ['LineString', 'MultiLineString']]], layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#f97316', 'line-width': 6, 'line-opacity': 0.9 } });
-        const coordinates = routeFeatures.flatMap((feature) => feature.geometry.type === 'LineString' ? feature.geometry.coordinates : feature.geometry.type === 'MultiLineString' ? feature.geometry.coordinates.flat() : []);
-        if (coordinates.length) {
-          const bounds = coordinates.reduce((result, point) => result.extend(point), new maplibregl.LngLatBounds(coordinates[0], coordinates[0]));
-          map.fitBounds(bounds, { padding: 50, maxZoom: 15, duration: 400 });
-        }
-        setStatus(`已載入 ${file.name}（${routeFeatures.length} 條路徑／要素）。點選橘色路徑可查看檔案資訊。`);
+        if (generation !== importGeneration) return;
+        const data = parseRouteFile(text, file.name.split('.').pop().toLowerCase());
+        const candidate = validateRoutes(data, file.name);
+        const bounds = candidate.coordinates.reduce((result, coordinate) => result.extend(coordinate), new maplibregl.LngLatBounds(candidate.coordinates[0], candidate.coordinates[0]));
+        candidateUrl = URL.createObjectURL(file);
+        map.getSource('imported-routes').setData({ type: 'FeatureCollection', features: candidate.features });
+        applied = true;
+        map.fitBounds(bounds, { padding: 50, maxZoom: 15, duration: 400 });
+        routeFeatures = candidate.features;
+        applied = false;
+        if (activePopup) { activePopup.remove(); activePopup = null; }
+        if (currentFileUrl) URL.revokeObjectURL(currentFileUrl);
+        currentFileUrl = candidateUrl;
+        candidateUrl = '';
+        currentFileName = file.name;
+        setStatus(`已載入 ${file.name}（${routeFeatures.length} 條路徑／要素）。點選橘色路徑或標記可查看檔案資訊。`);
       } catch (error) {
-        setStatus(`匯入失敗：${error.message || error}`);
+        if (applied) map.getSource('imported-routes').setData({ type: 'FeatureCollection', features: routeFeatures });
+        setStatus(`匯入失敗：${error.message || error}；保留原先路徑。`);
       }
+      finally { if (candidateUrl) URL.revokeObjectURL(candidateUrl); event.target.value = ''; }
+    });
+    window.addEventListener('pagehide', () => {
+      stopGeolocation();
+      stopSerial();
+      if (currentFileUrl) URL.revokeObjectURL(currentFileUrl);
     });
   })();
+
   </script>
 </body>
 </html>

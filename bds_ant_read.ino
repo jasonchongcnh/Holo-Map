@@ -1,23 +1,22 @@
-// 移除 SoftwareSerial.h，ESP32 直接使用硬體串口
-HardwareSerial MySerial(1); // 使用 UART1
+// ESP32 UART1 bridge. Confirm these board aliases against your board's pinout.
+// Replace D4/D3 below with GPIO numbers if your ESP32 board doesn't define them.
+#ifndef BDS_RX_PIN
+#define BDS_RX_PIN D4
+#endif
+#ifndef BDS_TX_PIN
+#define BDS_TX_PIN D3
+#endif
+
+HardwareSerial MySerial(1);
 
 void setup() {
-  // 與電腦序列埠監控視窗的通訊
   Serial.begin(115200);
-  
-  // 與北斗模組的通訊：波特率 115200, 格式 8N1, RX 腳位 D4, TX 腳位 D3
-  MySerial.begin(115200, SERIAL_8N1, D4, D3); 
+  MySerial.begin(115200, SERIAL_8N1, BDS_RX_PIN, BDS_TX_PIN);
 }
 
 void loop() {
-  if (MySerial.available() != 0) {
-    String NMEA_BD = MySerial.readStringUntil('\n');
-    Serial.println(NMEA_BD);
+  // Forward bytes without waiting for a complete line or allocating Strings.
+  while (MySerial.available() > 0) {
+    Serial.write(MySerial.read());
   }
-  /*
-  else {
-    Serial.println("Nothing Read!!");
-    delay(100);
-  }
-  */
 }

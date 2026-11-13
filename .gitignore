@@ -1,0 +1,9 @@
+.qoder/
+.vscode/
+.venv/
+.qa/
+__pycache__/
+*.pyc
+site/
+*.pem
+*.key
