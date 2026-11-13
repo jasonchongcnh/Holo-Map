@@ -1,13 +1,108 @@
 <!doctype html>
 <html lang="zh-Hant">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Holo-Map</title>
-<meta http-equiv="refresh" content="0;url=./bds_map.html">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f2e9">
+  <meta name="description" content="Holo-Map：連接北斗與 GPS，在地圖上記錄行程、匯入路徑，探索每一段移動。">
+  <title>Holo-Map｜讓每一段路，都有跡可循</title>
+  <style>
+    :root{color-scheme:light;--paper:#f4f2e9;--ink:#203d35;--muted:#63736a;--line:#d7dbce;--orange:#d56337;--green:#204d3d;--mono:ui-monospace,SFMono-Regular,Consolas,monospace}
+    *{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:28px}body{margin:0;background:var(--paper);color:var(--ink);font-family:"Segoe UI","Microsoft JhengHei","Noto Sans TC",sans-serif;-webkit-font-smoothing:antialiased}a{color:inherit;text-decoration:none}button,a{-webkit-tap-highlight-color:transparent}a:focus-visible{outline:3px solid var(--orange);outline-offset:6px}svg{display:block}::selection{background:#e2b88d;color:#173c2c}.shell{width:min(1240px,calc(100% - 96px));margin:auto}.skip{position:absolute;left:16px;top:-80px;padding:12px;background:var(--ink);color:white;z-index:10}.skip:focus{top:12px}
+    .header{min-height:100px;display:flex;justify-content:space-between;align-items:center;gap:24px;border-bottom:1px solid var(--line)}.brand{display:flex;align-items:center;gap:12px}.brand-symbol{width:39px;height:39px}.brand-name{font-size:23px;font-weight:760;letter-spacing:-1px}.brand-sub{display:block;font:9px var(--mono);letter-spacing:2px;margin-top:4px;color:var(--muted)}.nav{display:flex;align-items:center;gap:31px;font-size:13px;font-weight:600}.nav a{padding:12px 0}.nav a:hover{color:var(--orange)}.nav .github{display:flex;gap:7px;align-items:center;font:12px var(--mono)}.github svg{width:15px;height:15px}
+    .hero{display:grid;grid-template-columns:1fr 1.04fr;align-items:center;gap:62px;padding:65px 0 62px}.eyebrow{display:flex;align-items:center;gap:10px;font:10px var(--mono);letter-spacing:2px;color:var(--muted)}.eyebrow::before{content:"";width:21px;height:1px;background:var(--orange)}h1{font-size:clamp(38px,4.05vw,58px);font-weight:730;letter-spacing:-1.9px;line-height:1.45;margin:23px 0 21px}h1 .accent{color:var(--orange)}.hero-copy{font-size:15px;line-height:1.95;color:var(--muted);max-width:390px;margin:0}.actions{display:flex;align-items:center;gap:25px;flex-wrap:wrap;margin-top:30px}.button{display:inline-flex;align-items:center;justify-content:space-between;gap:28px;min-height:51px;background:var(--green);color:#fff;padding:0 20px;border:1px solid var(--green);border-radius:5px;font-size:13px;font-weight:600;transition:background .2s,transform .2s}.button:hover{background:#153d2e;transform:translateY(-2px)}.arrow{font-size:20px;font-weight:400;line-height:1}.text-link{display:inline-flex;align-items:center;gap:11px;padding:12px 0;font-size:13px;font-weight:650;border-bottom:1px solid #b5bfb0;transition:border-color .2s,color .2s}.text-link:hover{color:var(--orange);border-color:var(--orange)}.hero-tags{display:flex;gap:15px;align-items:center;flex-wrap:wrap;margin-top:35px;color:var(--muted);font-size:11px}.hero-tags span{display:flex;align-items:center;gap:6px}.hero-tags span::before{content:"";width:4px;height:4px;border-radius:50%;background:#799079}
+    .terrain{position:relative;isolation:isolate;aspect-ratio:1.05;background:#203c34;border-radius:14px;overflow:hidden;margin:0;box-shadow:0 26px 42px -32px #173729b3}.terrain-map{position:absolute;inset:0;width:100%;height:100%}.terrain-top{position:absolute;top:24px;left:25px;right:25px;display:flex;justify-content:space-between;gap:15px;color:#d4e0d3;font:9px var(--mono);letter-spacing:1.6px}.terrain-key{display:flex;gap:6px;align-items:center}.terrain-key::before{content:"";width:5px;height:5px;background:#de9462;border-radius:50%}.compass{position:absolute;top:58px;right:22px;width:35px;height:53px;color:#d6dfcc}.scale{position:absolute;left:25px;bottom:30px;color:#aebca8;font:9px var(--mono);letter-spacing:1px}.scale-rule{display:block;width:70px;height:7px;border:1px solid #9aae98;border-top:0;margin-bottom:7px}.terrain-note{position:absolute;bottom:25px;right:24px;background:#f4f2e9;border:1px solid #f4f2e9;border-radius:5px;padding:14px 17px;box-shadow:0 4px 20px #09271b26}.terrain-note .label{font:8px var(--mono);color:#738073;letter-spacing:1.7px}.terrain-note strong{font-size:12px;font-weight:650;display:block;margin-top:6px}.route{stroke-dasharray:950;stroke-dashoffset:950;animation:trace 2.3s .2s ease forwards}.point-pulse{transform-box:fill-box;transform-origin:center;animation:halo 4s infinite}.figure-caption{font:9px var(--mono);color:#a6b9a4;letter-spacing:.5px;position:absolute;left:25px;bottom:13px}.coordinates{font:10px var(--mono);letter-spacing:1px;fill:#adc0ab}.map-place{fill:#ccdac4;font:10px "Segoe UI",sans-serif;letter-spacing:2px}.map-label{fill:#dfc6a4;font:9px var(--mono);letter-spacing:1px}@keyframes trace{to{stroke-dashoffset:0}}@keyframes halo{0%,100%{opacity:.45}50%{opacity:.12}}
+    .section-heading{display:flex;align-items:end;justify-content:space-between;gap:25px;margin-bottom:24px}.kicker{font:10px var(--mono);letter-spacing:1.8px;color:var(--muted);margin:0 0 13px}.kicker .number{color:var(--orange);margin-right:10px}h2{font-size:29px;line-height:1.4;letter-spacing:-.6px;margin:0;font-weight:680}.section-aside{color:var(--muted);font-size:12px;line-height:1.8;margin:0}.tools{padding:19px 0 58px;scroll-margin-top:30px}.tool-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}.tool{position:relative;display:flex;flex-direction:column;padding:29px 30px 24px;border:1px solid #d4dacb;border-radius:9px;background:#eceee3;overflow:hidden}.tool-usb{background:#eee9df;border-color:#ded7ca}.tool-head{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-bottom:24px}.tool-icon{width:42px;height:42px;display:grid;place-items:center;border:1px solid #c5cebd;border-radius:50%;color:#436551}.tool-usb .tool-icon{color:#9a684d;border-color:#d6c6b7}.tool-icon svg{width:21px;height:21px}.tool-type{font:9px var(--mono);letter-spacing:1.6px;color:var(--muted)}h3{font-size:23px;letter-spacing:-.6px;font-weight:680;margin:0 0 12px}.tool p{font-size:13px;line-height:1.9;color:var(--muted);margin:0 0 19px;max-width:440px}.tool ul{display:flex;flex-wrap:wrap;gap:8px;list-style:none;padding:0;margin:0 0 27px}.tool li{font-size:10px;border:1px solid #cad3c1;border-radius:4px;padding:5px 8px;color:#536b57}.tool-usb li{border-color:#d5cabc;color:#896c56}.tool-bottom{margin-top:auto;padding-top:19px;border-top:1px solid #d2d9c9;display:flex;align-items:end;justify-content:space-between;gap:20px}.tool-usb .tool-bottom{border-color:#ddd2c3}.tool .requirement{font-size:10px;line-height:1.8;max-width:270px;margin:0}.tool-cta{display:inline-flex;align-items:center;white-space:nowrap;gap:15px;font-size:12px;font-weight:700;padding:8px 0}.tool-cta:hover{color:var(--orange)}
+    .start{padding:43px 0 46px;border-top:1px solid var(--line);display:grid;grid-template-columns:.85fr 2fr;gap:60px}.start h2{font-size:25px}.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;list-style:none;padding:3px 0 0;margin:0}.step-index{display:flex;align-items:center;gap:12px;font:11px var(--mono);color:var(--orange);margin-bottom:20px}.step-index::after{content:"";height:1px;flex:1;background:var(--line)}.steps h3{font-size:14px;letter-spacing:0;margin:0 0 9px}.steps p{font-size:11px;line-height:1.9;color:var(--muted);margin:0}.footer{display:flex;align-items:center;justify-content:space-between;gap:25px;border-top:1px solid var(--line);padding:24px 0 32px}.footer-brand{font:10px var(--mono);letter-spacing:1.2px;white-space:nowrap}.footer-note{max-width:520px;font-size:10px;line-height:1.8;color:var(--muted);text-align:right;margin:0}
+    @media(min-width:1440px){.hero{padding-top:77px;padding-bottom:75px;gap:85px}}@media(max-width:1050px){.shell{width:calc(100% - 64px)}.hero{gap:32px}.hero-copy{font-size:14px}.actions{gap:18px}.tool{padding:25px 23px}.tool-bottom{gap:12px;align-items:start;flex-direction:column}.tool .requirement{max-width:none}.start{gap:30px;grid-template-columns:.7fr 2fr}.steps{gap:20px}}@media(max-width:760px){.shell{width:calc(100% - 40px)}.header{min-height:85px}.nav{gap:19px;font-size:12px}.nav .github{display:none}.brand-name{font-size:21px}.brand-symbol{width:33px;height:33px}.brand-sub{font-size:8px}.hero{grid-template-columns:1fr;gap:34px;padding:42px 0 45px}.eyebrow{font-size:9px;letter-spacing:1.6px}h1{font-size:42px;line-height:1.42;margin:21px 0 18px;letter-spacing:-1.7px}.hero-copy{max-width:490px;font-size:14px}.actions{margin-top:24px;gap:22px}.hero-tags{margin-top:23px}.terrain{aspect-ratio:1.17}.section-heading{align-items:start;flex-direction:column;gap:12px;margin-bottom:20px}h2{font-size:26px}.section-aside{font-size:11px}.tools{padding:0 0 40px}.tool-grid{grid-template-columns:1fr;gap:16px}.tool{padding:25px}.tool-head{margin-bottom:20px}.tool-bottom{flex-direction:row;align-items:end}.tool .requirement{max-width:270px}.start{grid-template-columns:1fr;gap:30px;padding:33px 0}.steps{gap:23px}.steps p{font-size:11px}.footer{align-items:start;flex-direction:column;gap:12px;padding-bottom:25px}.footer-note{text-align:left}}@media(max-width:420px){.shell{width:calc(100% - 36px)}.nav{gap:15px}.nav a{font-size:11px}.brand-sub{letter-spacing:1px}.brand-name{font-size:19px}.brand{gap:8px}h1{font-size:37px}.hero-copy{font-size:13px}.actions{gap:19px}.button{padding:0 16px;gap:18px;font-size:12px}.text-link{font-size:12px;gap:7px}.hero-tags{gap:11px;font-size:10px}.terrain-top{top:19px;left:19px;right:19px;font-size:8px;letter-spacing:1px}.terrain-note{right:16px;bottom:23px;padding:10px 12px}.terrain-note strong{font-size:10px}.scale{left:18px;bottom:31px;font-size:8px}.scale-rule{width:52px}.figure-caption{font-size:7px;left:18px}.tool{padding:23px 21px}.tool-bottom{flex-direction:column;align-items:start;gap:10px}.steps{grid-template-columns:1fr;gap:24px}.steps li{display:grid;grid-template-columns:31px 1fr;column-gap:15px}.step-index{grid-row:span 2;margin:1px 0 0;align-items:start}.step-index::after{display:none}.steps h3{font-size:14px}.steps p{font-size:12px;max-width:270px}.compass{top:48px;right:16px;width:29px}}
+    @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation:none!important;transition:none!important}.route{stroke-dashoffset:0}}
+  </style>
 </head>
 <body>
-<p><a href="./bds_map.html">開啟 Holo-Map 行程地圖</a></p>
-<p><a href="./raspberry_pi.html">USB GPS／裝置定位與路徑匯入</a></p>
+  <a class="skip" href="#main">跳至主要內容</a>
+  <header class="header shell">
+    <a class="brand" href="./index.html" aria-label="Holo-Map 首頁">
+      <svg class="brand-symbol" viewBox="0 0 42 42" aria-hidden="true"><path d="M5 29 19 5l18 30H10l9-16 8 13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="34" cy="11" r="3.2" fill="#d56337"/></svg>
+      <span class="brand-name">Holo-Map<span class="brand-sub">A LITTLE CLOSER TO THE WORLD</span></span>
+    </a>
+    <nav class="nav" aria-label="主選單">
+      <a href="#tools">探索工具</a><a href="#start">開始使用</a>
+      <a class="github" href="https://github.com/jasonchongcnh/Holo-Map" target="_blank" rel="noopener noreferrer">GitHub <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M5 15 15 5M5 5h10v10" stroke="currentColor" stroke-width="1.5"/></svg></a>
+    </nav>
+  </header>
+  <main id="main" class="shell">
+    <section class="hero" aria-labelledby="hero-title">
+      <div>
+        <div class="eyebrow">YOUR JOURNEY, MAPPED.</div>
+        <h1 id="hero-title">從一個座標，<br>走出<span class="accent">你的路。</span></h1>
+        <p class="hero-copy">連接北斗與 GPS 接收器，在地圖上記錄行程、整理軌跡。讓每次出發，都留下清晰的路徑。</p>
+        <div class="actions">
+          <a class="button" href="./bds_map.html">開啟行程地圖 <span class="arrow" aria-hidden="true">↗</span></a>
+          <a class="text-link" href="./raspberry_pi.html">USB GPS 工具 <span aria-hidden="true">→</span></a>
+        </div>
+        <div class="hero-tags" aria-label="主要功能"><span>北斗 / GPS 定位</span><span>GPX 軌跡匯出</span><span>本機行程歷史</span></div>
+      </div>
+      <figure class="terrain" aria-label="山地等高線與橘色路徑的示意圖，並非即時定位資料">
+        <svg class="terrain-map" viewBox="0 0 560 530" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+          <defs>
+            <pattern id="grid" width="56" height="53" patternUnits="userSpaceOnUse"><path d="M56 0H0v53" fill="none" stroke="#a1b49a" stroke-opacity=".07" stroke-width="1"/></pattern>
+            <pattern id="grain" width="11" height="13" patternUnits="userSpaceOnUse"><circle cx="3" cy="4" r=".6" fill="#bfcbb0" opacity=".11"/><circle cx="9" cy="11" r=".4" fill="#c7d0b8" opacity=".12"/></pattern>
+            <radialGradient id="terrainGlow"><stop stop-color="#536e4a" stop-opacity=".6"/><stop offset="1" stop-color="#203c34" stop-opacity="0"/></radialGradient>
+          </defs>
+          <path fill="#203c34" d="M0 0h560v530H0z"/><ellipse cx="395" cy="168" rx="310" ry="320" fill="url(#terrainGlow)"/>
+          <g fill="none" stroke="#849674" stroke-width=".8" opacity=".37">
+            <path d="M-80 197C-22 120 54 178 97 111S122-24 240-44s150 42 212 12 159-4 160 88"/><path d="M-65 215C-9 139 57 194 113 128S136-6 241-25s137 44 205 20 146-9 159 77"/><path d="M-55 235C-2 161 70 217 127 146S154 13 249-6s120 46 196 22 126-2 144 81"/><path d="M-39 256C9 183 90 239 143 165S172 33 256 15s108 48 181 23 120 8 135 84"/><path d="M-28 279C22 207 103 260 160 186S190 55 265 37s97 48 164 23 110 11 128 89"/><path d="M-19 304C39 228 115 286 177 205S211 77 276 60s81 46 147 20 98 16 110 90"/><path d="M-4 332C54 255 133 303 193 229S226 99 284 84s70 40 130 19 87 20 96 90"/><path d="M8 358C70 282 149 325 211 251S244 123 291 108s58 35 113 18 82 26 84 92"/><path d="M25 382C84 312 163 349 230 273S261 149 299 134s47 29 97 15 67 32 66 91"/><path d="M40 409C102 340 179 374 250 296S279 176 307 160s37 22 80 11 56 34 49 92"/><path d="M62 437C118 369 197 399 269 320S296 202 317 187s27 15 61 7 46 39 31 91"/>
+            <path d="M-25 520C46 468 87 504 145 457s107-34 174-83 55-64 101-65 89 30 161-6"/><path d="M-15 546C52 490 106 526 164 481s113-33 174-79 56-66 98-66 88 28 155-5"/><path d="M23 558C73 517 130 551 185 507s112-31 173-77 54-64 97-63 77 26 147-4"/><path d="M81 571C113 542 155 573 208 532s110-28 168-71 54-63 92-61 69 24 137 0"/>
+            <path d="M296 283c11-15 10-46 30-63s22 2 43-4 28 22 16 45-53 55-77 49-24-12-12-27Z"/><path d="M316 277c10-10 8-29 22-39s16 2 24-1 15 14 6 28-29 30-42 27-17-7-10-15Z"/>
+          </g>
+          <path d="M-15 75C57 93 41 145 89 181s9 92 64 140 10 111 60 137 42 45 57 85" stroke="#95b1a5" stroke-width="14" opacity=".08" fill="none"/><path d="M-15 75C57 93 41 145 89 181s9 92 64 140 10 111 60 137 42 45 57 85" stroke="#759a8f" stroke-width="2" opacity=".45" fill="none"/>
+          <path d="M43 469 101 412 119 366 168 352 217 279 271 287 292 235 356 191 397 117 479 86" stroke="#a2b59a" stroke-width="1" stroke-dasharray="3 6" fill="none" opacity=".3"/>
+          <rect width="560" height="530" fill="url(#grid)"/><rect width="560" height="530" fill="url(#grain)"/>
+          <path d="M103 405C139 388 129 351 164 333s79 9 98-28-3-42 27-64 57-12 66-47 46-27 56-74" fill="none" stroke="#122d25" stroke-width="11" opacity=".55"/>
+          <path class="route" d="M103 405C139 388 129 351 164 333s79 9 98-28-3-42 27-64 57-12 66-47 46-27 56-74" fill="none" stroke="#e69a65" stroke-width="3.2" stroke-linecap="round"/>
+          <circle cx="103" cy="405" r="6" fill="#e7a16c" stroke="#203c34" stroke-width="3"/><circle cx="272" cy="265" r="4" fill="#e6a06a" stroke="#203c34" stroke-width="2"/>
+          <circle class="point-pulse" cx="411" cy="120" r="21" fill="#e7ae77" opacity=".25"/><circle cx="411" cy="120" r="9" fill="#f2eee1"/><circle cx="411" cy="120" r="4" fill="#d77d49"/>
+          <text x="121" y="417" class="map-label">START</text><text x="285" y="277" class="map-label">ON THE WAY</text><text x="371" y="95" class="map-label">EXPLORE MORE</text>
+          <text x="46" y="250" class="map-place" transform="rotate(-64 46 250)">RIVER VALLEY</text><text x="390" y="326" class="map-place" transform="rotate(-28 390 326)">RIDGELINE</text><text x="334" y="250" class="coordinates">△</text><text x="327" y="269" class="coordinates" style="font-size:8px">SUMMIT</text>
+        </svg>
+        <div class="terrain-top"><span>HOLO-MAP / FIELD NOTES</span><span class="terrain-key">ROUTE STUDY</span></div>
+        <svg class="compass" viewBox="0 0 35 53" fill="none" aria-hidden="true"><text x="17.5" y="10" fill="currentColor" text-anchor="middle" font-size="9" font-family="monospace">N</text><path d="m17.5 18 8 23-8-5-8 5 8-23Z" stroke="currentColor" stroke-width=".8"/><path d="m17.5 18 8 23-8-5V18Z" fill="currentColor" opacity=".65"/></svg>
+        <div class="scale" aria-hidden="true"><span class="scale-rule"></span>TAKE THE SCENIC ROUTE.</div>
+        <div class="terrain-note"><span class="label">LEAVE A TRACE</span><strong>每一段，都值得留下。</strong></div>
+        <figcaption class="figure-caption">示意軌跡 · 非即時定位資料</figcaption>
+      </figure>
+    </section>
+    <section id="tools" class="tools" aria-labelledby="tools-title">
+      <div class="section-heading">
+        <div><p class="kicker"><span class="number">01 /</span> CHOOSE YOUR WAY</p><h2 id="tools-title">選一種方式，開始探索。</h2></div>
+        <p class="section-aside">車載記錄，或隨手連接。<br>找到適合這次出發的工具。</p>
+      </div>
+      <div class="tool-grid">
+        <article class="tool">
+          <div class="tool-head"><span class="tool-icon"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m8 3 8 4 5-2v15l-5 2-8-4-5 2V5l5-2Zm0 0v15m8-11v15" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg></span><span class="tool-type">01 / TRIP RECORDER</span></div>
+          <h3>把行程，留在地圖上。</h3>
+          <p>透過樹莓派橋接北斗或 GPS 資料，一鍵開始記錄、結束儲存。在同一張地圖上回看走過的路。</p>
+          <ul aria-label="行程地圖功能"><li>即時定位</li><li>行程歷史</li><li>GPX 匯出</li></ul>
+          <div class="tool-bottom"><p class="requirement">使用前，請準備可連線的安全橋接位址。</p><a class="tool-cta" href="./bds_map.html">進入行程地圖 <span class="arrow" aria-hidden="true">↗</span></a></div>
+        </article>
+        <article class="tool tool-usb">
+          <div class="tool-head"><span class="tool-icon"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 21V3m0 0L9 6m3-3 3 3M12 16l-5-4V8m5 5 5-4V6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="7" cy="7" r="1.8" stroke="currentColor" stroke-width="1.3"/><path d="M15.5 3h3v3h-3z" fill="currentColor"/><circle cx="12" cy="20" r="2" fill="var(--paper)" stroke="currentColor" stroke-width="1.3"/></svg></span><span class="tool-type">02 / CONNECT & EXPLORE</span></div>
+          <h3>接上裝置，即刻出發。</h3>
+          <p>直接連接 USB GPS、ESP32，或使用裝置定位。也能匯入現有軌跡，在地圖上查看路線與航點。</p>
+          <ul aria-label="USB GPS 工具功能"><li>USB GPS</li><li>裝置定位</li><li>GPX / GeoJSON / KML</li></ul>
+          <div class="tool-bottom"><p class="requirement">USB 連線請使用桌面版 Chrome 或 Edge。</p><a class="tool-cta" href="./raspberry_pi.html">開啟 GPS 工具 <span class="arrow" aria-hidden="true">↗</span></a></div>
+        </article>
+      </div>
+    </section>
+    <section id="start" class="start" aria-labelledby="start-title">
+      <div><p class="kicker"><span class="number">02 /</span> GET YOUR BEARINGS</p><h2 id="start-title">下一段路，<br>從這裡開始。</h2></div>
+      <ol class="steps">
+        <li><span class="step-index" aria-hidden="true">01</span><h3>選擇你的工具</h3><p>持續記錄行程，選行程地圖；直接連接裝置，選 GPS 工具。</p></li>
+        <li><span class="step-index" aria-hidden="true">02</span><h3>帶入定位與路徑</h3><p>連接接收器、允許裝置定位，或匯入手邊的路徑檔案。</p></li>
+        <li><span class="step-index" aria-hidden="true">03</span><h3>在地圖上探索</h3><p>查看位置與移動軌跡。使用行程地圖時，記得匯出 GPX 備份。</p></li>
+      </ol>
+    </section>
+  </main>
+  <footer class="footer shell"><span class="footer-brand">HOLO-MAP <span aria-hidden="true">↗</span> MADE FOR THE JOURNEY.</span><p class="footer-note">底圖需要網路連線。行程歷史儲存在目前瀏覽器，清除資料前請先匯出備份。</p></footer>
 </body>
 </html>

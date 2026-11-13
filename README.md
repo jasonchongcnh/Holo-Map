@@ -2,12 +2,13 @@
 
 Traditional Chinese live NMEA trip map, GPX export, and browser-local trip history.
 
-- [Trip dashboard](https://jasonchongcnh.github.io/Holo-Map/) uses a Raspberry Pi UART WebSocket bridge.
+- [Homepage](https://jasonchongcnh.github.io/Holo-Map/) introduces the two tools.
+- [Trip dashboard](https://jasonchongcnh.github.io/Holo-Map/bds_map.html) uses a Raspberry Pi UART WebSocket bridge.
 - [USB GPS / device location](https://jasonchongcnh.github.io/Holo-Map/raspberry_pi.html) connects directly to a USB GPS/ESP32 in desktop Chrome or Edge, or uses browser geolocation. It also imports GPX, GeoJSON, and KML, including waypoints.
 
 ## GitHub Pages
 
-In repository **Settings > Pages**, select **GitHub Actions** as the source. The included workflow checks JavaScript and Python before deploying pushes to `main`; pull requests run checks only. `index.html` opens the trip dashboard. Only the two pages, homepage, shared NMEA parser, and `.nojekyll` are published. Firmware, Python, tests, credentials, and editor settings are excluded from the website artifact.
+In repository **Settings > Pages**, select **GitHub Actions** as the source. The included workflow checks JavaScript and Python before deploying pushes to `main`; pull requests run checks only. `index.html` is the landing page with links to both tools; it does not redirect automatically. Only the two pages, homepage, shared NMEA parser, and `.nojekyll` are published. Firmware, Python, tests, credentials, and editor settings are excluded from the website artifact.
 
 ## Connect the trip dashboard to a Raspberry Pi
 
